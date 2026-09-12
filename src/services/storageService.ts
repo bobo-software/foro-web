@@ -109,6 +109,21 @@ export class StorageService {
   }
 
   /**
+   * Upload proof of payment for a tracked payment (Gold-tier feature).
+   * Stored as: payments/{businessId}/{timestamp}-{filename}
+   * Returns the file **path** (not URL) to be persisted in the DB.
+   */
+  static async uploadPaymentProof(
+    businessId: number,
+    file: File,
+  ): Promise<{ filePath: string; data: { fileName: string; size: number; etag: string; url: string } }> {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const filePath = `payments/${businessId}/${Date.now()}-${safeName}`;
+    const data = await this.upload(filePath, file);
+    return { filePath, data };
+  }
+
+  /**
    * Fetch a file from a URL and return as an object URL for display.
    * `url` is expected to be a presigned S3 URL from `getFileDownloadUrl` —
    * presigned URLs are self-authenticating, so no auth headers are needed

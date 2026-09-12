@@ -5,6 +5,7 @@ import { LuFilter } from 'react-icons/lu';
 import type { Payment } from '../../types/payment';
 import { PAYMENT_METHODS } from '../../types/payment';
 import PaymentService from '../../services/paymentService';
+import StorageService from '../../services/storageService';
 import MRTThemeProvider from '../providers/MRTThemeProvider';
 import { formatCurrency } from '../../utils/currency';
 import { useBusinessStore } from '../../stores/data/BusinessStore';
@@ -49,6 +50,21 @@ export function PaymentList() {
   useEffect(() => {
     fetchPayments();
   }, [fetchPayments]);
+
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+
+  const handleViewProof = useCallback(async (payment: Payment) => {
+    if (!payment.attachment_url || payment.id == null) return;
+    setDownloadingId(payment.id);
+    try {
+      const url = await StorageService.getFileDownloadUrl(payment.attachment_url);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch {
+      setError('Failed to open proof of payment');
+    } finally {
+      setDownloadingId(null);
+    }
+  }, []);
 
   const handleDelete = useCallback(async (row: MRT_Row<Payment>) => {
     const id = row.original.id;
@@ -105,8 +121,26 @@ export function PaymentList() {
         enableColumnFilter: true,
       },
       { accessorKey: 'reference', header: 'Reference', enableColumnFilter: true },
+      {
+        accessorKey: 'attachment_url',
+        header: 'Proof',
+        enableColumnFilter: false,
+        Cell: ({ row }) =>
+          row.original.attachment_url ? (
+            <button
+              type="button"
+              onClick={() => handleViewProof(row.original)}
+              disabled={downloadingId === row.original.id}
+              className="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 underline disabled:opacity-50"
+            >
+              {downloadingId === row.original.id ? 'Opening…' : 'View'}
+            </button>
+          ) : (
+            <span className="text-slate-300 dark:text-slate-600">—</span>
+          ),
+      },
     ],
-    []
+    [handleViewProof, downloadingId]
   );
 
   if (loading) {

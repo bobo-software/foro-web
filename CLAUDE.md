@@ -8,7 +8,7 @@ Before implementing any backend request feature, always check:
 
 1. The MCP tools (`mcp__foro-mysql__*`) for available server-side DB operations (schema introspection, migrations, bulk data loads) — these operate on foro-api's MySQL database directly.
 2. The `client-sdk/requests/` docs for existing request patterns and API contracts.
-3. `foro-api/docs/api.md` for the authoritative, up-to-date route/contract reference — it's kept in sync with what's actually shipped.
+3. Dira workspace `foro` (`search_docs` / `docs/api/api.md`) for the authoritative route/contract reference — update Dira when contracts change, not a git `docs/` tree.
 
 Do not invent or assume request shapes — consult these sources first. If a feature needs an endpoint that doesn't exist yet on foro-api, it needs to be built there first (resource-oriented REST under `/api/v1`, see `foro-api/src/lib/crudRouter.ts` for the standard CRUD pattern), not proxied through some other mechanism.
 
@@ -25,11 +25,12 @@ Always use the shared form components from `src/components/forms/` for all user 
 
 ## Documentation Updates
 
-Update the relevant docs in the `docs/` folder **as part of the same change** that adds or modifies a feature — not as a deferred follow-up. If a task touches multiple files over several steps, update the corresponding doc alongside the step that changes the behavior it describes, so the docs are never behind the code even mid-task.
+Update the matching note in the **Dira** workspace `foro` **as part of the same change** — not as a deferred follow-up. `search_docs` first; then `edit_file` / `write_file`. Do not recreate long-form notes under git `docs/`.
 
-- `docs/00-overview/` — if the feature affects overall architecture or project scope
-- `docs/01-roles/` — if the feature affects user roles or permissions
-- `docs/02-modules/` — if the feature adds or changes a module
-- `docs/03-database/` — if the feature changes the database schema or data model
+- `docs/web/00-overview/` — overall architecture or project scope
+- `docs/web/01-roles/` — user roles or permissions
+- `docs/web/02-modules/` — feature modules
+- `docs/web/03-database/` — table/column contracts (then verify with MySQL MCP)
+- `docs/api/api.md` / `docs/api/database.md` — HTTP or schema contracts
 
-Keep docs in sync with the code — do not leave them stale, create a new subfolder if needed.
+Keep Dira in sync with the code — do not leave notes stale.

@@ -11,7 +11,9 @@ import CompanyService from '../../services/companyService';
 import ProjectService from '../../services/projectService';
 import InvoiceService from '../../services/invoiceService';
 import ContactService from '../../services/contactService';
+import StorageService from '../../services/storageService';
 import { useBusinessStore } from '../../stores/data/BusinessStore';
+import { useSubscriptionLimits } from '../../hooks';
 import { logger } from '../../utils/logger';
 import { isCreditNoteInvoice } from '../../utils/invoiceLedger';
 import AppLabledAutocomplete from '../forms/AppLabledAutocomplete';
@@ -43,6 +45,10 @@ export function PaymentForm({ paymentId, initialCompanyId, initialProjectId, ini
   const [error, setError] = useState<string | null>(null);
   const [sendReceipt, setSendReceipt] = useState(false);
   const [receiptContact, setReceiptContact] = useState<Contact | null>(null);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const { tier } = useSubscriptionLimits();
+  const canUploadProof = tier === 'gold' || tier === 'silver';
   const [formData, setFormData] = useState<CreatePaymentDto>({
     company_id: initialCompanyId,
     project_id: initialProjectId,
@@ -102,6 +108,7 @@ export function PaymentForm({ paymentId, initialCompanyId, initialProjectId, ini
           reference: payment.reference ?? '',
           business_id: payment.business_id,
           invoice_id: payment.invoice_id,
+          attachment_url: payment.attachment_url,
         });
         if (payment.company_id) {
           loadProjectsForCompany(payment.company_id).catch((err: unknown) => logger.error('Failed to load projects for payment company:', err));
@@ -283,16 +290,31 @@ export function PaymentForm({ paymentId, initialCompanyId, initialProjectId, ini
       setLoading(true);
       setError(null);
       const businessId = useBusinessStore.getState().currentBusiness?.id;
+      let attachmentUrl = formData.attachment_url;
+      if (canUploadProof && proofFile && businessId != null) {
+        try {
+          setUploadingProof(true);
+          const { filePath } = await StorageService.uploadPaymentProof(businessId, proofFile);
+          attachmentUrl = filePath;
+        } catch (uploadErr) {
+          setError(uploadErr instanceof Error ? `Failed to upload proof of payment: ${uploadErr.message}` : 'Failed to upload proof of payment');
+          return;
+        } finally {
+          setUploadingProof(false);
+        }
+      }
       if (isEditing) {
         await PaymentService.update(paymentId, {
           ...formData,
           amount: Number(formData.amount),
+          attachment_url: attachmentUrl,
           ...(businessId != null && { business_id: businessId }),
         });
       } else {
         const created = await PaymentService.create({
           ...formData,
           amount: Number(formData.amount),
+          attachment_url: attachmentUrl,
           ...(businessId != null && { business_id: businessId }),
         });
         if (sendReceipt && created.id != null) {
@@ -451,13 +473,33 @@ export function PaymentForm({ paymentId, initialCompanyId, initialProjectId, ini
             />
           </div>
         )}
+        {canUploadProof && (
+          <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+            <label className="block mb-1.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+              Proof of payment (optional)
+            </label>
+            <input
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg"
+              onChange={(e) => setProofFile(e.target.files?.[0] ?? null)}
+              className="block w-full text-sm text-slate-600 dark:text-slate-300 file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white file:text-sm hover:file:bg-indigo-500"
+            />
+            {proofFile ? (
+              <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Selected: {proofFile.name}</p>
+            ) : formData.attachment_url ? (
+              <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                A proof of payment is already attached. Choose a file to replace it.
+              </p>
+            ) : null}
+          </div>
+        )}
         <div className="flex flex-wrap gap-3">
           <button
             type="submit"
             disabled={loading}
             className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Saving…' : 'Save payment'}
+            {uploadingProof ? 'Uploading…' : loading ? 'Saving…' : 'Save payment'}
           </button>
           {onCancel && (
             <button

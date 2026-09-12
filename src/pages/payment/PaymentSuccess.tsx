@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { LuPartyPopper, LuSparkles } from 'react-icons/lu';
 import useAuthStore from '@/stores/data/AuthStore';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
 import { useSubscriptionStore } from '@/stores/data/SubscriptionStore';
+import { getPricingTier } from '@/config/pricingTiers';
+import { formatCurrency } from '@/utils/currency';
 
 const MAX_POLL_ATTEMPTS = 12;
 const POLL_INTERVAL_MS = 5000;
+const CELEBRATION_REDIRECT_MS = 6000;
 
 type ViewState = 'checking' | 'active' | 'failed' | 'timeout';
 
@@ -16,6 +20,7 @@ export function PaymentSuccess() {
   const fetchUserBusinesses = useBusinessStore((s) => s.fetchUserBusinesses);
   const fetchForBusiness = useSubscriptionStore((s) => s.fetchForBusiness);
   const reconcilePending = useSubscriptionStore((s) => s.reconcilePending);
+  const currentSubscription = useSubscriptionStore((s) => s.currentSubscription);
 
   const [view, setView] = useState<ViewState>('checking');
   const attemptsRef = useRef(0);
@@ -77,10 +82,21 @@ export function PaymentSuccess() {
 
   useEffect(() => {
     if (view === 'active') {
-      const timer = setTimeout(() => navigate('/app/dashboard', { replace: true }), 1500);
+      const timer = setTimeout(() => navigate('/app/dashboard', { replace: true }), CELEBRATION_REDIRECT_MS);
       return () => clearTimeout(timer);
     }
   }, [view, navigate]);
+
+  const activeTier = currentSubscription && currentSubscription.tier !== 'free' ? getPricingTier(currentSubscription.tier) : null;
+  const billedAnnually = currentSubscription?.billing_period === 'annually';
+  const priceLabel =
+    currentSubscription?.amount != null
+      ? `${formatCurrency(currentSubscription.amount, currentSubscription.currency)} / ${billedAnnually ? 'yr' : 'mo'}`
+      : activeTier
+      ? billedAnnually
+        ? `${activeTier.yearlyPrice} / yr`
+        : `${activeTier.price}${activeTier.period}`
+      : null;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 px-4 py-12">
@@ -97,10 +113,38 @@ export function PaymentSuccess() {
 
         {view === 'active' && (
           <>
-            <h1 className="text-xl font-semibold text-slate-900 dark:text-white">Payment successful</h1>
+            <div className="relative mx-auto flex h-20 w-20 items-center justify-center">
+              <LuSparkles className="absolute -top-1 -left-3 h-5 w-5 text-amber-400 animate-pulse" />
+              <LuSparkles className="absolute -bottom-1 -right-3 h-4 w-4 text-indigo-400 animate-pulse [animation-delay:300ms]" />
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/30">
+                <LuPartyPopper className="h-9 w-9 text-white" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">You&apos;re all set! 🎉</h1>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Your subscription is active. Redirecting you to your dashboard…
+              {activeTier ? (
+                <>
+                  Your business is now on the <span className="font-semibold text-slate-900 dark:text-white">{activeTier.name}</span> plan.
+                </>
+              ) : (
+                'Your subscription is active.'
+              )}
             </p>
+            {priceLabel && (
+              <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-indigo-50 dark:bg-indigo-900/30 px-4 py-1.5 text-sm font-medium text-indigo-700 dark:text-indigo-300">
+                Now billing {priceLabel}
+              </div>
+            )}
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              A confirmation email is on its way. We&apos;ll take you to your dashboard in a moment.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/app/dashboard', { replace: true })}
+              className="inline-block rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 transition"
+            >
+              Continue to dashboard
+            </button>
           </>
         )}
 

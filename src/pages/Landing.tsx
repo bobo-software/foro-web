@@ -1,13 +1,21 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LuFileText, LuReceipt, LuKanban, LuUsers, LuCheck, LuX } from 'react-icons/lu';
 import toast from 'react-hot-toast';
 import useAuthStore from '../stores/data/AuthStore';
-import { PRICING_TIERS } from '../config/pricingTiers';
+import { usePricingStore } from '../stores/data/PricingStore';
+import { PRICING_TIERS, YEARLY_DISCOUNT_PERCENT, withLivePricing } from '../config/pricingTiers';
 
 export function Landing() {
   const navigate = useNavigate();
   const hasRedirected = useRef(false);
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const liveAmounts = usePricingStore((s) => s.liveAmounts);
+  const fetchLivePricing = usePricingStore((s) => s.fetchLivePricing);
+  const pricingTiers = useMemo(() => withLivePricing(PRICING_TIERS, liveAmounts), [liveAmounts]);
+  useEffect(() => {
+    void fetchLivePricing();
+  }, [fetchLivePricing]);
   useEffect(() => {
     if (hasRedirected.current) return;
     const { sessionUser, accessToken } = useAuthStore.getState();
@@ -124,10 +132,44 @@ export function Landing() {
             <p className="text-lg text-slate-600 dark:text-slate-400">
               Start free. Upgrade as you grow.
             </p>
+
+            <div className="mt-8 inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/50 p-1">
+              <button
+                type="button"
+                onClick={() => setBillingPeriod('monthly')}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                  billingPeriod === 'monthly'
+                    ? 'bg-slate-900 dark:bg-indigo-600 text-white'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                type="button"
+                onClick={() => setBillingPeriod('yearly')}
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                  billingPeriod === 'yearly'
+                    ? 'bg-slate-900 dark:bg-indigo-600 text-white'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+              >
+                Yearly
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    billingPeriod === 'yearly'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                  }`}
+                >
+                  Save {YEARLY_DISCOUNT_PERCENT}%
+                </span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-            {PRICING_TIERS.map((tier) => (
+            {pricingTiers.map((tier) => (
               <div
                 key={tier.id}
                 className={`relative flex flex-col rounded-2xl border p-6 transition ${
@@ -149,14 +191,42 @@ export function Landing() {
                   <p className={`text-sm mb-4 ${tier.highlight ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'}`}>
                     {tier.description}
                   </p>
-                  <div className="flex items-end gap-1">
-                    <span className={`text-4xl font-extrabold tracking-tight ${tier.highlight ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
-                      {tier.price}
-                    </span>
-                    <span className={`text-sm mb-1 ${tier.highlight ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'}`}>
-                      {tier.period}
-                    </span>
-                  </div>
+                  {billingPeriod === 'monthly' ? (
+                    <div className="flex items-end gap-1">
+                      <span className={`text-4xl font-extrabold tracking-tight ${tier.highlight ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
+                        {tier.price}
+                      </span>
+                      <span className={`text-sm mb-1 ${tier.highlight ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'}`}>
+                        {tier.period}
+                      </span>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-end gap-1">
+                        <span className={`text-4xl font-extrabold tracking-tight ${tier.highlight ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
+                          {tier.yearlyPrice}
+                        </span>
+                        <span className={`text-sm mb-1 ${tier.highlight ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'}`}>
+                          /yr
+                        </span>
+                      </div>
+                      {tier.amount > 0 && (
+                        <div className={`mt-1 flex items-center gap-2 text-xs ${tier.highlight ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'}`}>
+                          <span className="line-through opacity-70">{tier.yearlyStrikePrice}</span>
+                          <span
+                            className={`rounded-full px-2 py-0.5 font-semibold ${
+                              tier.highlight
+                                ? 'bg-white/20 text-white'
+                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                            }`}
+                          >
+                            Save {YEARLY_DISCOUNT_PERCENT}%
+                          </span>
+                          <span>· {tier.yearlyMonthlyEquivalent}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <ul className="flex-1 space-y-3 mb-8">

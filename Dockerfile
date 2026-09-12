@@ -46,7 +46,13 @@ RUN --mount=type=secret,id=infisical_token,required=false \
 FROM nginx:alpine
 
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# nginx:alpine's entrypoint runs envsubst over /etc/nginx/templates/*.template
+# into /etc/nginx/conf.d/ at container start, so `listen ${PORT}` resolves from
+# the runtime env var — lets staging/prod share this image on different ports.
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+
+# Default if Coolify/the environment doesn't set PORT explicitly.
+ENV PORT=80
 
 EXPOSE 80
 

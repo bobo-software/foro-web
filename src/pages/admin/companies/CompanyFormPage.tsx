@@ -11,6 +11,7 @@ import type { CreateBankingDetailsDto, BankingDetails } from '@/types/bankingDet
 import type { Address, CreateAddressDto } from '@/types/address';
 import toast from 'react-hot-toast';
 import AppInputLabeled from '@/components/forms/AppLabledInput';
+import AppLabeledSelectInput from '@/components/forms/AppLabledSelectInput';
 import { CompanyAddressFields } from './CompanyAddressFields';
 import { CompanyCredentialsFields } from './CompanyCredentialsFields';
 import { CompanyBankingFields } from './CompanyBankingFields';
@@ -96,6 +97,7 @@ const initial: CreateCompanyDto = {
   industry: '',
   website: '',
   notes: '',
+  company_type: 'customer',
 };
 
 export function CompanyFormPage() {
@@ -175,6 +177,7 @@ export function CompanyFormPage() {
             industry: data.industry || '',
             website: data.website || '',
             notes: data.notes || '',
+            company_type: data.company_type || 'customer',
           });
           setAddressLookup(data.address || '');
           AddressService.findByCompanyId(data.id!)
@@ -510,6 +513,17 @@ export function CompanyFormPage() {
                   placeholder="e.g. Acme Corporation"
                 />
               </div>
+              <AppLabeledSelectInput
+                label="Type"
+                value={form.company_type ?? 'customer'}
+                options={[
+                  { value: 'customer', label: 'Customer' },
+                  { value: 'supplier', label: 'Supplier' },
+                  { value: 'both', label: 'Customer & supplier' },
+                ]}
+                onChange={(e) => update('company_type', e.target.value as CreateCompanyDto['company_type'])}
+                disabled={saving}
+              />
               <div className="sm:col-span-2">
                 <AppInputLabeled
                   label="Contact person"

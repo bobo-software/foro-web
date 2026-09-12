@@ -6,11 +6,14 @@ export type SubscriptionTier = 'free' | 'bronze' | 'silver' | 'gold';
 
 export type SubscriptionStatus = 'active' | 'pending' | 'past_due' | 'cancelled';
 
+export type BillingPeriod = 'monthly' | 'annually';
+
 export interface BusinessSubscription {
   id?: number;
   business_id: number;
   tier: SubscriptionTier;
   status: SubscriptionStatus;
+  billing_period?: BillingPeriod;
   provider?: string;
   plan_code?: string | null;
   transaction_id?: string | null;

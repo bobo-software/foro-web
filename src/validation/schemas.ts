@@ -77,6 +77,7 @@ export const companySchema = z.object({
   industry: z.string().optional(),
   website: z.string().url('Invalid URL').optional().or(z.literal('')),
   notes: z.string().max(2000).optional(),
+  company_type: z.enum(['customer', 'supplier', 'both']).optional(),
 });
 
 export type CompanyInput = z.infer<typeof companySchema>;

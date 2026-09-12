@@ -9,6 +9,7 @@ import {
   LuSettings,
   LuListChecks,
   LuFolderOpen,
+  LuShoppingCart,
 } from 'react-icons/lu';
 import AppText from '@/components/text/AppText';
 import useThemeStore from '../../stores/state/ThemeStore';
@@ -86,6 +87,7 @@ const AppSidebar = () => {
         {navLink('/app/dashboard', 'Dashboard', <LuLayoutDashboard className="w-4 h-4" />)}
         {navLink('/app/companies', 'Companies', <LuBuilding2 className="w-4 h-4" />)}
         {navLink('/app/documents', 'Documents', <LuFileText className="w-4 h-4" />)}
+        {navLink('/app/purchasing', 'Purchasing', <LuShoppingCart className="w-4 h-4" />)}
         {navLink('/app/items', 'Stock', <LuPackage className="w-4 h-4" />)}
         {navLink('/app/payments', 'Payments', <LuWallet className="w-4 h-4" />)}
         {navLink('/app/projects', 'Projects', <LuFolderOpen className="w-4 h-4" />)}

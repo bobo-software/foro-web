@@ -22,6 +22,7 @@ interface ApiPaymentRow {
   paymentMethod: string | null;
   businessId: number | null;
   projectId: number | null;
+  attachmentUrl: string | null;
 }
 
 function normalizePayment(row: ApiPaymentRow): Payment {
@@ -39,6 +40,7 @@ function normalizePayment(row: ApiPaymentRow): Payment {
     invoice_id: row.invoiceId,
     created_at: row.createdAt ?? undefined,
     updated_at: row.updatedAt ?? undefined,
+    attachment_url: row.attachmentUrl ?? undefined,
   };
 }
 
@@ -54,6 +56,7 @@ function toApiBody(data: Partial<CreatePaymentDto>): Record<string, unknown> {
   if (data.payment_method !== undefined) body.paymentMethod = data.payment_method;
   if (data.reference !== undefined) body.reference = data.reference;
   if (data.invoice_id !== undefined) body.invoiceId = data.invoice_id;
+  if (data.attachment_url !== undefined) body.attachmentUrl = data.attachment_url;
   return body;
 }
 

@@ -2,6 +2,8 @@
 
 ## Cursor Cloud specific instructions
 
+Product and module docs live in the **Dira** workspace `foro` (MCP `dira`). Do not recreate a git `docs/` tree — see `docs/README.md` in this repo for the pointer.
+
 ### Overview
 
 Foro is a React + TypeScript SPA (Vite dev server on port 5178) for invoice/quotation management. The entire backend is an external BaaS called **Skaftin** — there are no local backend services, databases, or Docker Compose files in this repo.

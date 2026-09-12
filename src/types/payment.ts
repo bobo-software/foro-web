@@ -33,6 +33,8 @@ export interface Payment {
   invoice_id?: number | null;
   created_at?: string;
   updated_at?: string;
+  /** Storage path of an uploaded proof-of-payment file (Gold-tier feature). */
+  attachment_url?: string | null;
 }
 
 export interface CreatePaymentDto {
@@ -46,4 +48,5 @@ export interface CreatePaymentDto {
   payment_method?: PaymentMethod | string;
   reference?: string;
   invoice_id?: number | null;
+  attachment_url?: string | null;
 }

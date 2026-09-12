@@ -1,3 +1,11 @@
+export type CompanyType = 'customer' | 'supplier' | 'both';
+
+export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
+  customer: 'Customer',
+  supplier: 'Supplier',
+  both: 'Customer & supplier',
+};
+
 /**
  * Company types — client businesses (formerly "Customer")
  */
@@ -37,6 +45,8 @@ export interface Company {
   show_logo_on_documents?: boolean;
   /** Whether tax/VAT should be applied on this business's invoices and quotations */
   tax_enabled?: boolean;
+  /** Trading relationship: customer (sales), supplier (purchasing), or both */
+  company_type?: CompanyType;
   created_at?: string;
   updated_at?: string;
 }
@@ -62,4 +72,9 @@ export interface CreateCompanyDto {
   document_template?: string;
   show_logo_on_documents?: boolean;
   tax_enabled?: boolean;
+  company_type?: CompanyType;
+}
+
+export function isSupplierCompany(company: Pick<Company, 'company_type'>): boolean {
+  return company.company_type === 'supplier' || company.company_type === 'both';
 }

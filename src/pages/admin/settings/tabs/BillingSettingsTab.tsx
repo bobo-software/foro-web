@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
 import { useSubscriptionStore } from '@/stores/data/SubscriptionStore';
+import { usePricingStore } from '@/stores/data/PricingStore';
 import { useIsBusinessOwner } from '@/hooks/useBusinessRole';
 import useAuthStore from '@/stores/data/AuthStore';
-import { PRICING_TIERS, getPricingTier } from '@/config/pricingTiers';
-import type { SubscriptionTier } from '@/types/subscription';
+import { PRICING_TIERS, YEARLY_DISCOUNT_PERCENT, getPricingTier, withLivePricing } from '@/config/pricingTiers';
+import type { BillingPeriod, SubscriptionTier } from '@/types/subscription';
 
 const STATUS_LABEL: Record<string, string> = {
   active: 'Active',
@@ -33,10 +34,18 @@ export function BillingSettingsTab() {
   const businessId = currentBusiness?.id ?? null;
   const { isOwner } = useIsBusinessOwner(businessId);
   const [pendingTier, setPendingTier] = useState<SubscriptionTier | null>(null);
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
+  const liveAmounts = usePricingStore((s) => s.liveAmounts);
+  const fetchLivePricing = usePricingStore((s) => s.fetchLivePricing);
+  const pricingTiers = useMemo(() => withLivePricing(PRICING_TIERS, liveAmounts), [liveAmounts]);
 
   useEffect(() => {
     if (businessId != null) void fetchForBusiness(businessId);
   }, [businessId, fetchForBusiness]);
+
+  useEffect(() => {
+    void fetchLivePricing();
+  }, [fetchLivePricing]);
 
   const handleChangePlan = async (tier: SubscriptionTier) => {
     if (!businessId) return;
@@ -52,7 +61,7 @@ export function BillingSettingsTab() {
         toast.error('Your account has no email on file');
         return;
       }
-      const paymentUrl = await startPaidCheckout(businessId, tier, email);
+      const paymentUrl = await startPaidCheckout(businessId, tier, email, billingPeriod);
       if (!paymentUrl) {
         const reason = useSubscriptionStore.getState().error;
         toast.error(reason || 'Failed to start checkout. Please try again.');
@@ -97,6 +106,11 @@ export function BillingSettingsTab() {
             <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Current plan</h3>
             <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
               {currentTier?.name ?? 'No plan selected'}
+              {currentTier && currentTier.amount > 0 && (
+                <span className="ml-2 text-sm font-normal text-slate-500 dark:text-slate-400">
+                  · billed {currentSubscription?.billing_period === 'annually' ? 'annually' : 'monthly'}
+                </span>
+              )}
             </p>
           </div>
           {currentSubscription?.status && (
@@ -127,10 +141,50 @@ export function BillingSettingsTab() {
       </div>
 
       <div>
-        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">Change plan</h3>
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Change plan</h3>
+          <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-1">
+            <button
+              type="button"
+              onClick={() => setBillingPeriod('monthly')}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                billingPeriod === 'monthly'
+                  ? 'bg-slate-900 dark:bg-indigo-600 text-white'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setBillingPeriod('annually')}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition ${
+                billingPeriod === 'annually'
+                  ? 'bg-slate-900 dark:bg-indigo-600 text-white'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+              }`}
+            >
+              Yearly
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                  billingPeriod === 'annually'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                }`}
+              >
+                -{YEARLY_DISCOUNT_PERCENT}%
+              </span>
+            </button>
+          </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {PRICING_TIERS.map((tier) => {
-            const isCurrent = currentSubscription?.tier === tier.id && currentSubscription?.status === 'active';
+          {pricingTiers.map((tier) => {
+            const effectivePeriod = tier.amount === 0 ? 'monthly' : billingPeriod;
+            const currentPeriod = currentSubscription?.billing_period ?? 'monthly';
+            const isCurrent =
+              currentSubscription?.tier === tier.id &&
+              currentSubscription?.status === 'active' &&
+              (tier.amount === 0 || currentPeriod === effectivePeriod);
             return (
               <div
                 key={tier.id}
@@ -142,8 +196,7 @@ export function BillingSettingsTab() {
               >
                 <p className="font-semibold text-slate-900 dark:text-white">{tier.name}</p>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
-                  {tier.price}
-                  {tier.period}
+                  {effectivePeriod === 'annually' ? `${tier.yearlyPrice}/yr` : `${tier.price}${tier.period}`}
                 </p>
                 <button
                   type="button"

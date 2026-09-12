@@ -45,6 +45,11 @@ const DocumentsPage = lazy(() => import('@pages/admin/DocumentsPage').then((m) =
 const InvoiceList = lazy(() => import('@/components/elements/InvoiceList').then((m) => ({ default: m.InvoiceList })));
 const QuotationList = lazy(() => import('@/components/elements/QuotationList').then((m) => ({ default: m.QuotationList })));
 const DocumentsTrashPage = lazy(() => import('@pages/admin/DocumentsTrashPage').then((m) => ({ default: m.DocumentsTrashPage })));
+const PurchasingPage = lazy(() => import('@pages/admin/purchasing/PurchasingPage').then((m) => ({ default: m.PurchasingPage })));
+const PurchaseOrderListPage = lazy(() => import('@pages/admin/purchasing/PurchaseOrderListPage').then((m) => ({ default: m.PurchaseOrderListPage })));
+const PurchaseOrderFormPage = lazy(() => import('@pages/admin/purchasing/PurchaseOrderFormPage').then((m) => ({ default: m.PurchaseOrderFormPage })));
+const PurchaseOrderDetailPage = lazy(() => import('@pages/admin/purchasing/PurchaseOrderDetailPage').then((m) => ({ default: m.PurchaseOrderDetailPage })));
+const BillsPage = lazy(() => import('@pages/admin/purchasing/BillsPage').then((m) => ({ default: m.BillsPage })));
 const QuotationListPage = lazy(() => import('@pages/admin/QuotationListPage').then((m) => ({ default: m.QuotationListPage })));
 const QuotationDetailPage = lazy(() => import('@pages/admin/QuotationDetailPage').then((m) => ({ default: m.QuotationDetailPage })));
 const QuotationFormPage = lazy(() => import('@pages/admin/QuotationFormPage').then((m) => ({ default: m.QuotationFormPage })));
@@ -209,6 +214,14 @@ function App() {
                 <Route path="credit-notes" element={<InvoiceList documentKind="credit_note" />} />
                 <Route path="trash" element={<DocumentsTrashPage />} />
               </Route>
+              <Route path="purchasing" element={<PurchasingPage />}>
+                <Route index element={<Navigate to="orders" replace />} />
+                <Route path="orders" element={<PurchaseOrderListPage />} />
+                <Route path="bills" element={<BillsPage />} />
+              </Route>
+              <Route path="purchasing/orders/create" element={<PurchaseOrderFormPage />} />
+              <Route path="purchasing/orders/:id" element={<PurchaseOrderDetailPage />} />
+              <Route path="purchasing/orders/:id/edit" element={<PurchaseOrderFormPage />} />
               <Route path="quotations" element={<Outlet />}>
                 <Route index element={<QuotationListPage />} />
                 <Route path="create" element={<QuotationFormPage />} />

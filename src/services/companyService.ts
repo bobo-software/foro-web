@@ -32,6 +32,7 @@ interface ApiCompanyRow {
   documentTemplate: string | null;
   showLogoOnDocuments: boolean | null;
   taxEnabled: boolean | null;
+  companyType: string | null;
 }
 
 function fromApi(row: ApiCompanyRow): Company {
@@ -57,6 +58,7 @@ function fromApi(row: ApiCompanyRow): Company {
     document_template: row.documentTemplate ?? undefined,
     show_logo_on_documents: row.showLogoOnDocuments ?? undefined,
     tax_enabled: row.taxEnabled ?? undefined,
+    company_type: (row.companyType as Company['company_type']) ?? 'customer',
     created_at: row.createdAt ?? undefined,
     updated_at: row.updatedAt ?? undefined,
   };
@@ -84,6 +86,7 @@ function toApiBody(data: Partial<CreateCompanyDto>): Record<string, unknown> {
   if (data.document_template !== undefined) body.documentTemplate = data.document_template;
   if (data.show_logo_on_documents !== undefined) body.showLogoOnDocuments = data.show_logo_on_documents;
   if (data.tax_enabled !== undefined) body.taxEnabled = data.tax_enabled;
+  if (data.company_type !== undefined) body.companyType = data.company_type;
   return body;
 }
 
@@ -105,13 +108,15 @@ export class CompanyService {
   }): Promise<Company[]> {
     // Only userId/businessId/isOwnerCompany are server-side filterable; anything
     // else in `where` is applied client-side to preserve the old call sites' behavior.
-    const { userId, businessId, isOwnerCompany, ...rest } = (params?.where ?? {}) as Record<string, unknown>;
+    const { userId, businessId, isOwnerCompany, companyType, company_type, ...rest } = (params?.where ?? {}) as Record<string, unknown>;
+    const typeFilter = companyType ?? company_type;
     const response = await foroApiClient.get<ApiCompanyRow[]>(BASE, {
       limit: params?.limit ?? 5000,
       offset: params?.offset ?? 0,
       ...(userId !== undefined && { userId }),
       ...(businessId !== undefined && { businessId }),
       ...(isOwnerCompany !== undefined && { isOwnerCompany }),
+      ...(typeFilter !== undefined && { companyType: typeFilter }),
     });
     let rows = (response.data ?? []).map(fromApi);
     for (const [key, value] of Object.entries(rest)) {

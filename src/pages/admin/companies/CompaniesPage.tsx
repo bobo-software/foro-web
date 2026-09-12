@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LuFilter, LuUsers } from 'react-icons/lu';
 import { AppDataTable, type AppDataTableColumn } from '@/components/elements/AppDataTable';
+import AppLabeledSelectInput from '@/components/forms/AppLabledSelectInput';
 import { CompanyLogo } from '@/components/elements/CompanyLogo';
 import { useCompanyStore } from '@/stores/data/CompanyStore';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
 import { useAutoRefresh, useProjectId, useSubscriptionLimits } from '@/hooks';
-import type { Company } from '@/types/company';
+import type { Company, CompanyType } from '@/types/company';
+import { COMPANY_TYPE_LABELS } from '@/types/company';
 
 const companyColumns: AppDataTableColumn<Company>[] = [
   {
@@ -38,6 +40,12 @@ const companyColumns: AppDataTableColumn<Company>[] = [
     cellClassName: 'text-slate-600 dark:text-slate-300',
     render: (c) => c.tax_id ?? '—',
   },
+  {
+    id: 'company_type',
+    header: 'Type',
+    cellClassName: 'text-slate-600 dark:text-slate-300',
+    render: (c) => COMPANY_TYPE_LABELS[(c.company_type ?? 'customer') as CompanyType],
+  },
 ];
 
 export function CompaniesPage() {
@@ -46,6 +54,7 @@ export function CompaniesPage() {
   const businessId = useBusinessStore((s) => s.currentBusiness?.id);
   const projectId = useProjectId();
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | CompanyType>('all');
   const { tier, limits } = useSubscriptionLimits();
 
   const clientCompanyCount = useMemo(
@@ -61,17 +70,24 @@ export function CompaniesPage() {
   useAutoRefresh(projectId, 'companies', fetchCompanies);
 
   const filteredCompanies = useMemo(() => {
-    if (!search.trim()) return companies;
-    const q = search.trim().toLowerCase();
-    return companies.filter(
-      (c) =>
+    return companies.filter((c) => {
+      if (typeFilter !== 'all') {
+        const type = c.company_type ?? 'customer';
+        if (typeFilter === 'customer' && type !== 'customer' && type !== 'both') return false;
+        if (typeFilter === 'supplier' && type !== 'supplier' && type !== 'both') return false;
+        if (typeFilter === 'both' && type !== 'both') return false;
+      }
+      if (!search.trim()) return true;
+      const q = search.trim().toLowerCase();
+      return (
         c.name?.toLowerCase().includes(q) ||
         c.company_name?.toLowerCase().includes(q) ||
         c.email?.toLowerCase().includes(q) ||
         c.phone?.toLowerCase().includes(q) ||
-        c.tax_id?.toLowerCase().includes(q),
-    );
-  }, [companies, search]);
+        c.tax_id?.toLowerCase().includes(q)
+      );
+    });
+  }, [companies, search, typeFilter]);
 
   const companiesEmptyMessage = search.trim() ? 'No companies match your search.' : 'No companies yet.';
 
@@ -96,6 +112,20 @@ export function CompaniesPage() {
         <p className="text-slate-500 dark:text-slate-400">Manage your companies</p>
       </div>
       <div className="flex items-center gap-3">
+        <div className="w-48 shrink-0">
+          <AppLabeledSelectInput
+            label="Type"
+            labelHidden
+            value={typeFilter}
+            options={[
+              { value: 'all', label: 'All types' },
+              { value: 'customer', label: 'Customers' },
+              { value: 'supplier', label: 'Suppliers' },
+              { value: 'both', label: 'Both' },
+            ]}
+            onChange={(e) => setTypeFilter(e.target.value as 'all' | CompanyType)}
+          />
+        </div>
         <div className="relative min-w-0 flex-1">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
             <LuFilter size={18} />

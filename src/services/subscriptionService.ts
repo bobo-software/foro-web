@@ -5,7 +5,7 @@
  */
 
 import { foroApiClient } from '../backend';
-import type { BusinessSubscription } from '../types/subscription';
+import type { BillingPeriod, BusinessSubscription } from '../types/subscription';
 
 const BASE = '/api/v1/business-subscriptions';
 
@@ -14,6 +14,7 @@ interface ApiRow {
   businessId: number;
   tier: string;
   status: string;
+  billingPeriod: string | null;
   provider: string | null;
   planCode: string | null;
   transactionId: string | null;
@@ -32,6 +33,7 @@ function fromApi(row: ApiRow): BusinessSubscription {
     business_id: row.businessId,
     tier: row.tier as BusinessSubscription['tier'],
     status: row.status as BusinessSubscription['status'],
+    billing_period: (row.billingPeriod as BillingPeriod | null) ?? undefined,
     provider: row.provider ?? undefined,
     plan_code: row.planCode,
     transaction_id: row.transactionId,
@@ -45,7 +47,21 @@ function fromApi(row: ApiRow): BusinessSubscription {
   };
 }
 
+export interface LivePricingPlan {
+  tier: string;
+  period: BillingPeriod;
+  planCode: string | null;
+  amount: number;
+  currency: string;
+}
+
 export class SubscriptionService {
+  /** Live per-tier pricing sourced from Paystack — see usePricingStore for the cached/merged view. */
+  static async getPlans(): Promise<LivePricingPlan[]> {
+    const response = await foroApiClient.get<LivePricingPlan[]>('/api/v1/payments/plans');
+    return response.data ?? [];
+  }
+
   static async findByBusinessId(businessId: number): Promise<BusinessSubscription | null> {
     const response = await foroApiClient.get<ApiRow[]>(BASE, { businessId, limit: 1 });
     const row = (response.data ?? [])[0];
@@ -62,11 +78,12 @@ export class SubscriptionService {
   static async initiateCheckout(
     businessId: number,
     tier: Exclude<BusinessSubscription['tier'], 'free'>,
-    customerEmail: string
+    customerEmail: string,
+    period: BillingPeriod = 'monthly'
   ): Promise<{ authorizationUrl: string; reference: string }> {
     const response = await foroApiClient.post<{ authorizationUrl: string; reference: string }>(
       '/api/v1/payments/initiate',
-      { businessId, tier, customerEmail }
+      { businessId, tier, customerEmail, period }
     );
     return response.data;
   }

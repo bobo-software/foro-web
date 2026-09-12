@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import SubscriptionService from '../../services/subscriptionService';
-import type { BusinessSubscription, SubscriptionTier } from '../../types/subscription';
+import type { BillingPeriod, BusinessSubscription, SubscriptionTier } from '../../types/subscription';
 
 /**
  * A subscription only counts as its paid tier while `status === 'active'`.
@@ -22,7 +22,8 @@ interface SubscriptionState {
   startPaidCheckout: (
     businessId: number,
     tier: SubscriptionTier,
-    customerEmail: string
+    customerEmail: string,
+    period?: BillingPeriod
   ) => Promise<string | null>;
   reconcilePending: () => Promise<void>;
   /** Cancels any active paid plan and reverts the business to Free. Returns false (with `error` set) if the API call fails. */
@@ -70,11 +71,11 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     }
   },
 
-  startPaidCheckout: async (businessId: number, tier: SubscriptionTier, customerEmail: string) => {
+  startPaidCheckout: async (businessId: number, tier: SubscriptionTier, customerEmail: string, period: BillingPeriod = 'monthly') => {
     if (tier === 'free') return null;
     set({ error: null });
     try {
-      const { authorizationUrl } = await SubscriptionService.initiateCheckout(businessId, tier, customerEmail);
+      const { authorizationUrl } = await SubscriptionService.initiateCheckout(businessId, tier, customerEmail, period);
       return authorizationUrl;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to start checkout';

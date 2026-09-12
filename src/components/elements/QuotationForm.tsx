@@ -65,7 +65,7 @@ export function QuotationForm({ quotationId, initialCompanyId, initialProjectId,
     valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     status: 'draft',
     subtotal: 0,
-    tax_rate: 15,
+    tax_rate: 0,
     tax_amount: 0,
     total: 0,
     currency: 'ZAR',
@@ -705,6 +705,9 @@ export function QuotationForm({ quotationId, initialCompanyId, initialProjectId,
                       min={0}
                       value={formData.tax_rate || ''}
                       onChange={(e) => handleChange('tax_rate', parseFloat(e.target.value) || 0)}
+                      onFocus={() => {
+                        if (!formData.tax_rate) handleChange('tax_rate', 15);
+                      }}
                       className="w-14 px-1.5 py-0.5 text-xs border border-slate-200 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-indigo-400"
                       placeholder="0"
                     />

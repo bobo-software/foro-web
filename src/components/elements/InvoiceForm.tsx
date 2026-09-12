@@ -5,6 +5,8 @@ import type { CreateInvoiceDto } from '../../types/invoice';
 import type { Company } from '../../types/company';
 import type { Project } from '../../types/project';
 import TimeEntryService, { MAX_BILLABLE_ROLLUP_ROWS } from '../../services/timeEntryService';
+import InvoiceService from '../../services/invoiceService';
+import { useSubscriptionLimits } from '../../hooks';
 import { useBusinessStore } from '../../stores/data/BusinessStore';
 import { useCompanyStore } from '../../stores/data/CompanyStore';
 import { useItemStore } from '../../stores/data/ItemStore';
@@ -61,6 +63,7 @@ export function InvoiceForm({
   const currentBusinessId = useBusinessStore((s) => s.currentBusiness?.id);
   const taxEnabled = useBusinessStore((s) => s.currentBusiness?.tax_enabled ?? true);
   const businessVatNumber = useBusinessStore((s) => s.currentBusiness?.vat_number);
+  const { limits } = useSubscriptionLimits();
   const [billableSummary, setBillableSummary] = useState<{
     loading: boolean;
     totalMinutes: number;
@@ -89,7 +92,7 @@ export function InvoiceForm({
     due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     status: 'draft',
     subtotal: 0,
-    tax_rate: 15,
+    tax_rate: 0,
     tax_amount: 0,
     total: 0,
     currency: 'ZAR',
@@ -583,6 +586,25 @@ export function InvoiceForm({
         return;
       }
     }
+    const businessId = useBusinessStore.getState().currentBusiness?.id;
+    const isNewInvoice = !invoiceId && (formData.document_kind ?? 'invoice') !== 'credit_note';
+    if (isNewInvoice && limits.invoices != null && businessId != null) {
+      const monthPrefix = new Date().toISOString().slice(0, 7);
+      try {
+        const existing = await InvoiceService.findAll({ where: { business_id: businessId } });
+        const countThisMonth = existing.filter(
+          (inv) => inv.document_kind === 'invoice' && (inv.issue_date ?? '').startsWith(monthPrefix)
+        ).length;
+        if (countThisMonth >= limits.invoices) {
+          const message = `Your plan is limited to ${limits.invoices} invoices per month — upgrade in Settings → Billing to add more.`;
+          setError(message);
+          toast.error(message);
+          return;
+        }
+      } catch (err: unknown) {
+        logger.error('Failed to check monthly invoice limit:', err);
+      }
+    }
     const items = submittableRows
       .map((r) => ({
         sku: r.sku || undefined,
@@ -594,7 +616,6 @@ export function InvoiceForm({
         total: lineTotal(r),
         item_id: r.itemId,
       }));
-    const businessId = useBusinessStore.getState().currentBusiness?.id;
     const payload: CreateInvoiceDto = {
       ...formData,
       document_kind: formData.document_kind ?? 'invoice',
@@ -790,6 +811,9 @@ export function InvoiceForm({
                 min={0}
                 value={String(formData.tax_rate || '')}
                 onChange={(e) => handleChange('tax_rate', parseFloat(e.target.value) || 0)}
+                onFocus={() => {
+                  if (!formData.tax_rate) handleChange('tax_rate', 15);
+                }}
               />
             )}
           </div>
