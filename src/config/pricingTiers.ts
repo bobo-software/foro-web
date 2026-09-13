@@ -220,3 +220,25 @@ export function getPricingTier(id: SubscriptionTier): PricingTier {
   if (!tier) throw new Error(`Unknown pricing tier: ${id}`);
   return tier;
 }
+
+const TIER_RANK: Record<SubscriptionTier, number> = { free: 0, bronze: 1, silver: 2, gold: 3 };
+
+export type PlanChangeType = 'upgrade' | 'downgrade';
+
+/**
+ * Classifies a plan change for UI copy (button labels, modal titles) — higher tier
+ * wins; same tier falls back to billing period (annually > monthly). Mirrors the
+ * backend's classification (SubscriptionBillingService.classifyChange) so the UI
+ * always describes a change the same way the API will actually apply it.
+ */
+export function classifyPlanChange(
+  currentTier: SubscriptionTier,
+  currentPeriod: BillingPeriod,
+  targetTier: SubscriptionTier,
+  targetPeriod: BillingPeriod
+): PlanChangeType {
+  if (TIER_RANK[targetTier] !== TIER_RANK[currentTier]) {
+    return TIER_RANK[targetTier] > TIER_RANK[currentTier] ? 'upgrade' : 'downgrade';
+  }
+  return targetPeriod === 'annually' && currentPeriod !== 'annually' ? 'upgrade' : 'downgrade';
+}

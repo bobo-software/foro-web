@@ -23,3 +23,5 @@ export { EditTaskModal } from './modals/EditTaskModal';
 export type { EditTaskModalProps } from './modals/EditTaskModal';
 export { ManageCategoriesModal } from './modals/ManageCategoriesModal';
 export type { ManageCategoriesModalProps } from './modals/ManageCategoriesModal';
+export { ConfirmPlanChangeModal } from './modals/ConfirmPlanChangeModal';
+export type { ConfirmPlanChangeModalProps } from './modals/ConfirmPlanChangeModal';

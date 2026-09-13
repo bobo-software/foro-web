@@ -8,7 +8,7 @@ export function PaymentCancel() {
         <p className="text-sm text-slate-600 dark:text-slate-400">
           You cancelled the checkout. No charge was made — you can pick a plan again whenever you&apos;re ready.
         </p>
-        <Link to="/app/settings/billing" className="inline-block text-sm text-indigo-600 hover:text-indigo-500 underline">
+        <Link to="/app/billing" className="inline-block text-sm text-indigo-600 hover:text-indigo-500 underline">
           Back to plans
         </Link>
       </div>

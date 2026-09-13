@@ -154,7 +154,7 @@ export function PaymentSuccess() {
             <p className="text-sm text-slate-600 dark:text-slate-400">
               We couldn&apos;t confirm your payment. Please try again.
             </p>
-            <Link to="/app/settings/billing" className="inline-block text-sm text-indigo-600 hover:text-indigo-500 underline">
+            <Link to="/app/billing" className="inline-block text-sm text-indigo-600 hover:text-indigo-500 underline">
               Back to plans
             </Link>
           </>

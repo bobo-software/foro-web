@@ -1,11 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
+import { LuBuilding2, LuCheck, LuFileText, LuUsers } from 'react-icons/lu';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
 import { useSubscriptionStore } from '@/stores/data/SubscriptionStore';
 import { usePricingStore } from '@/stores/data/PricingStore';
 import { useIsBusinessOwner } from '@/hooks/useBusinessRole';
+import { useSubscriptionUsage, type UsageMetric } from '@/hooks/useSubscriptionUsage';
 import useAuthStore from '@/stores/data/AuthStore';
-import { PRICING_TIERS, YEARLY_DISCOUNT_PERCENT, getPricingTier, withLivePricing } from '@/config/pricingTiers';
+import {
+  PRICING_TIERS,
+  YEARLY_DISCOUNT_PERCENT,
+  classifyPlanChange,
+  getPricingTier,
+  withLivePricing,
+} from '@/config/pricingTiers';
+import { ConfirmPlanChangeModal } from '@/components/modals/ConfirmPlanChangeModal';
+import type { ChangePlanResult } from '@/services/subscriptionService';
 import type { BillingPeriod, SubscriptionTier } from '@/types/subscription';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -22,19 +32,57 @@ const STATUS_CLASS: Record<string, string> = {
   cancelled: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
 };
 
-export function BillingSettingsTab() {
+function UsageRow({ icon, metric }: { icon: React.ReactNode; metric: UsageMetric }) {
+  const { label, used, limit } = metric;
+  const pct = limit != null && limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  const atLimit = limit != null && used >= limit;
+  const remaining = limit != null ? Math.max(0, limit - used) : null;
+  return (
+    <div className="flex items-center gap-4 py-4">
+      <div className="shrink-0 w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400">
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-3 mb-1.5">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{label}</span>
+          <span
+            className={`text-sm font-semibold ${atLimit ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white'}`}
+          >
+            {limit != null ? `${used} / ${limit}` : used}
+          </span>
+        </div>
+        <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all ${atLimit ? 'bg-red-500' : 'bg-indigo-500'}`}
+            style={{ width: limit != null ? `${pct}%` : '100%' }}
+          />
+        </div>
+        <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+          {limit == null
+            ? 'Unlimited on your current plan'
+            : atLimit
+              ? 'Limit reached — upgrade to add more'
+              : `${remaining} remaining`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export function BillingPage() {
   const sessionUser = useAuthStore((s) => s.sessionUser);
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
   const currentSubscription = useSubscriptionStore((s) => s.currentSubscription);
   const fetchForBusiness = useSubscriptionStore((s) => s.fetchForBusiness);
   const selectFreeTier = useSubscriptionStore((s) => s.selectFreeTier);
   const startPaidCheckout = useSubscriptionStore((s) => s.startPaidCheckout);
-  const cancelSubscription = useSubscriptionStore((s) => s.cancel);
 
   const businessId = currentBusiness?.id ?? null;
   const { isOwner } = useIsBusinessOwner(businessId);
+  const usage = useSubscriptionUsage();
   const [pendingTier, setPendingTier] = useState<SubscriptionTier | null>(null);
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
+  const [changeModalTarget, setChangeModalTarget] = useState<SubscriptionTier | null>(null);
   const liveAmounts = usePricingStore((s) => s.liveAmounts);
   const fetchLivePricing = usePricingStore((s) => s.fetchLivePricing);
   const pricingTiers = useMemo(() => withLivePricing(PRICING_TIERS, liveAmounts), [liveAmounts]);
@@ -47,8 +95,18 @@ export function BillingSettingsTab() {
     void fetchLivePricing();
   }, [fetchLivePricing]);
 
+  const currentTier = currentSubscription ? getPricingTier(currentSubscription.tier) : null;
+  const currentPeriod: BillingPeriod = currentSubscription?.billing_period ?? 'monthly';
+  // Already paying for something — switching tiers goes through the password-confirmed
+  // change-plan flow (prorated upgrade or a scheduled downgrade) rather than a fresh checkout.
+  const hasActivePaidPlan = currentSubscription?.tier !== 'free' && currentSubscription?.status === 'active';
+
   const handleChangePlan = async (tier: SubscriptionTier) => {
     if (!businessId) return;
+    if (hasActivePaidPlan) {
+      setChangeModalTarget(tier);
+      return;
+    }
     setPendingTier(tier);
     try {
       if (tier === 'free') {
@@ -73,17 +131,25 @@ export function BillingSettingsTab() {
     }
   };
 
-  const handleCancel = async () => {
-    if (!window.confirm('Cancel your paid plan and switch back to Free? You can upgrade again any time.')) {
+  const handlePlanChangeSuccess = (result: ChangePlanResult) => {
+    const targetName = changeModalTarget ? getPricingTier(changeModalTarget).name : 'your new plan';
+    setChangeModalTarget(null);
+
+    if (result.changeType === 'upgrade') {
+      const amount = result.chargedAmount;
+      toast.success(
+        amount
+          ? `Upgraded to ${targetName} — charged ${result.subscription.currency ?? 'ZAR'} ${amount.toFixed(2)}.`
+          : `Upgraded to ${targetName}.`
+      );
       return;
     }
-    const cancelled = await cancelSubscription();
-    if (!cancelled) {
-      const reason = useSubscriptionStore.getState().error;
-      toast.error(reason ? `Failed to cancel: ${reason}` : 'Failed to cancel your subscription. Please try again.');
-      return;
-    }
-    toast.success('Switched back to the Free plan');
+
+    const effectiveLabel =
+      result.effectiveAt !== 'immediate'
+        ? new Date(result.effectiveAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+        : 'the end of your current billing period';
+    toast.success(`You'll stay on ${currentTier?.name ?? 'your current plan'} until ${effectiveLabel}, then move to ${targetName}.`);
   };
 
   if (!isOwner) {
@@ -96,10 +162,13 @@ export function BillingSettingsTab() {
     );
   }
 
-  const currentTier = currentSubscription ? getPricingTier(currentSubscription.tier) : null;
-
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Billing</h1>
+        <p className="mt-1 text-slate-600 dark:text-slate-400">Manage your subscription plan and usage.</p>
+      </div>
+
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -108,7 +177,7 @@ export function BillingSettingsTab() {
               {currentTier?.name ?? 'No plan selected'}
               {currentTier && currentTier.amount > 0 && (
                 <span className="ml-2 text-sm font-normal text-slate-500 dark:text-slate-400">
-                  · billed {currentSubscription?.billing_period === 'annually' ? 'annually' : 'monthly'}
+                  · billed {currentPeriod === 'annually' ? 'annually' : 'monthly'}
                 </span>
               )}
             </p>
@@ -123,14 +192,21 @@ export function BillingSettingsTab() {
             </span>
           )}
         </div>
+
+        <div className="mt-4 divide-y divide-slate-100 dark:divide-slate-700">
+          <UsageRow icon={<LuBuilding2 className="w-5 h-5" />} metric={usage.companies} />
+          <UsageRow icon={<LuUsers className="w-5 h-5" />} metric={usage.teamMembers} />
+          <UsageRow icon={<LuFileText className="w-5 h-5" />} metric={usage.invoicesThisMonth} />
+        </div>
+
         {currentSubscription?.tier !== 'free' && currentSubscription?.status === 'active' && (
           currentSubscription?.subscription_token ? (
             <button
               type="button"
-              onClick={handleCancel}
+              onClick={() => setChangeModalTarget('free')}
               className="mt-4 text-sm text-red-600 hover:text-red-500 underline"
             >
-              Cancel and switch to Free
+              Switch to Free
             </button>
           ) : (
             <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
@@ -180,15 +256,17 @@ export function BillingSettingsTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {pricingTiers.map((tier) => {
             const effectivePeriod = tier.amount === 0 ? 'monthly' : billingPeriod;
-            const currentPeriod = currentSubscription?.billing_period ?? 'monthly';
             const isCurrent =
               currentSubscription?.tier === tier.id &&
               currentSubscription?.status === 'active' &&
               (tier.amount === 0 || currentPeriod === effectivePeriod);
+            const changeType = classifyPlanChange(currentSubscription?.tier ?? 'free', currentPeriod, tier.id, effectivePeriod);
+            const actionLabel = changeType === 'upgrade' ? 'Upgrade' : 'Downgrade';
+            const includedFeatures = tier.features.filter((f) => f.included);
             return (
               <div
                 key={tier.id}
-                className={`rounded-xl border p-4 ${
+                className={`flex flex-col h-full rounded-xl border p-4 ${
                   isCurrent
                     ? 'border-indigo-500 ring-1 ring-indigo-500'
                     : 'border-slate-200 dark:border-slate-700'
@@ -198,21 +276,52 @@ export function BillingSettingsTab() {
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
                   {effectivePeriod === 'annually' ? `${tier.yearlyPrice}/yr` : `${tier.price}${tier.period}`}
                 </p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+                  What you&apos;ll get
+                </p>
+                <ul className="flex-1 space-y-1.5 mb-4">
+                  {includedFeatures.map((feature) => (
+                    <li
+                      key={feature.label}
+                      className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-400"
+                    >
+                      <LuCheck className="w-3.5 h-3.5 mt-0.5 text-emerald-500 shrink-0" />
+                      <span>{feature.label}</span>
+                    </li>
+                  ))}
+                </ul>
                 <button
                   type="button"
                   disabled={isCurrent || pendingTier !== null}
                   onClick={() => handleChangePlan(tier.id)}
                   className="w-full rounded-lg bg-slate-900 dark:bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:hover:bg-indigo-500 disabled:opacity-50 transition"
                 >
-                  {isCurrent ? 'Current plan' : pendingTier === tier.id ? 'Please wait…' : 'Switch'}
+                  {isCurrent ? 'Current plan' : pendingTier === tier.id ? 'Please wait…' : actionLabel}
                 </button>
               </div>
             );
           })}
         </div>
       </div>
+
+      {changeModalTarget && currentSubscription && businessId != null && (
+        <ConfirmPlanChangeModal
+          isOpen={true}
+          onClose={() => setChangeModalTarget(null)}
+          businessId={businessId}
+          customerEmail={sessionUser?.email ?? null}
+          currentTier={currentSubscription.tier}
+          currentTierName={currentTier?.name ?? currentSubscription.tier}
+          currentPeriod={currentPeriod}
+          currentPeriodEnd={currentSubscription.current_period_end ?? null}
+          targetTier={changeModalTarget}
+          targetTierName={getPricingTier(changeModalTarget).name}
+          targetPeriod={changeModalTarget === 'free' ? 'monthly' : billingPeriod}
+          onSuccess={handlePlanChangeSuccess}
+        />
+      )}
     </div>
   );
 }
 
-export default BillingSettingsTab;
+export default BillingPage;

@@ -62,7 +62,7 @@ const BankingSettingsTab = lazy(() => import('@pages/admin/settings/tabs').then(
 const DocumentSettingsTab = lazy(() => import('@pages/admin/settings/tabs').then((m) => ({ default: m.DocumentSettingsTab })));
 const PreferencesSettingsTab = lazy(() => import('@pages/admin/settings/tabs').then((m) => ({ default: m.PreferencesSettingsTab })));
 const TeamSettingsTab = lazy(() => import('@pages/admin/settings/tabs').then((m) => ({ default: m.TeamSettingsTab })));
-const BillingSettingsTab = lazy(() => import('@pages/admin/settings/tabs').then((m) => ({ default: m.BillingSettingsTab })));
+const BillingPage = lazy(() => import('@/pages/admin/billing/BillingPage').then((m) => ({ default: m.BillingPage })));
 const PaymentSuccess = lazy(() => import('@pages/payment/PaymentSuccess').then((m) => ({ default: m.PaymentSuccess })));
 const PaymentCancel = lazy(() => import('@pages/payment/PaymentCancel').then((m) => ({ default: m.PaymentCancel })));
 const InviteAccept = lazy(() => import('@pages/team/InviteAccept').then((m) => ({ default: m.InviteAccept })));
@@ -234,13 +234,13 @@ function App() {
                 <Route path=":id/edit" element={<PaymentFormPage />} />
               </Route>
               <Route path="statements" element={<StatementsPage />} />
+              <Route path="billing" element={<BillingPage />} />
               <Route path="settings" element={<SettingsPage />}>
                 <Route index element={<BusinessSettingsTab />} />
                 <Route path="banking" element={<BankingSettingsTab />} />
                 <Route path="documents" element={<DocumentSettingsTab />} />
                 <Route path="preferences" element={<PreferencesSettingsTab />} />
                 <Route path="team" element={<TeamSettingsTab />} />
-                <Route path="billing" element={<BillingSettingsTab />} />
               </Route>
             </Route>
 
