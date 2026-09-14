@@ -5,10 +5,8 @@ import { ThemeToggleButton } from '@/components/elements/ThemeToggleButton';
 import StatementPortalService from '@/services/statementPortalService';
 import type { BankingDetails } from '@/types/bankingDetails';
 import { ACCOUNT_TYPES } from '@/types/bankingDetails';
-import type { Business } from '@/types/business';
 import type { StatementPortalCompany, StatementRow } from '@/types/statementPortal';
 import { formatCurrency } from '@/utils/currency';
-import { generateStatementPdf } from '@/utils/statementPdf';
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString(undefined, { dateStyle: 'medium' });
@@ -23,7 +21,6 @@ export function StatementPortalViewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [company, setCompany] = useState<StatementPortalCompany | null>(null);
-  const [business, setBusiness] = useState<Business | null>(null);
   const [bankingDetails, setBankingDetails] = useState<BankingDetails | null>(null);
   const [rows, setRows] = useState<StatementRow[]>([]);
   const [currency, setCurrency] = useState<string>('ZAR');
@@ -37,7 +34,6 @@ export function StatementPortalViewPage() {
       .then((result) => {
         if (cancelled) return;
         setCompany(result.company);
-        setBusiness(result.business);
         setBankingDetails(result.bankingDetails);
         setRows(result.rows);
         setCurrency(result.rows[0]?.currency ?? 'ZAR');
@@ -72,13 +68,6 @@ export function StatementPortalViewPage() {
     const closingBalance = filteredRows.length > 0 ? filteredRows[filteredRows.length - 1].balance : 0;
     return { totalDebits, totalCredits, openingBalance, closingBalance };
   }, [filteredRows]);
-
-  const handleDownloadPdf = useCallback(async () => {
-    if (!company) return;
-    const from = filteredRows[0]?.date ?? '';
-    const to = filteredRows[filteredRows.length - 1]?.date ?? from;
-    await generateStatementPdf(company.name, from, to, filteredRows, currency, business);
-  }, [company, filteredRows, currency, business]);
 
   const handlePrint = useCallback(() => {
     if (!company) return;
@@ -142,17 +131,10 @@ export function StatementPortalViewPage() {
             <button
               type="button"
               onClick={handlePrint}
-              className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-            >
-              Print
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleDownloadPdf()}
               disabled={filteredRows.length === 0}
               className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
             >
-              Download PDF
+              Print / Save PDF
             </button>
             <button
               type="button"
