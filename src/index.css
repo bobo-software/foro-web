@@ -396,7 +396,8 @@
    * Sidebar/nav use print:hidden in the app shell.
    */
   .quotation-print-root,
-  .invoice-print-root {
+  .invoice-print-root,
+  .statement-print-root {
     position: static !important;
     width: 100%;
     max-width: none !important;
@@ -411,7 +412,8 @@
    * (after totals) instead of starting a forced new page.
    */
   .invoice-print-page,
-  .quotation-print-page {
+  .quotation-print-page,
+  .statement-print-page {
     display: block !important;
     min-height: 0 !important;
     height: auto !important;
@@ -421,7 +423,8 @@
   }
 
   .invoice-print-page .print-doc-footer,
-  .quotation-print-page .print-doc-footer {
+  .quotation-print-page .print-doc-footer,
+  .statement-print-page .print-doc-footer {
     margin-top: 0.3cm !important;
     padding-top: 0.15cm !important;
     break-before: avoid;
@@ -431,43 +434,50 @@
   }
 
   .invoice-print-page .print-doc-notes,
-  .quotation-print-page .print-doc-notes {
+  .quotation-print-page .print-doc-notes,
+  .statement-print-page .print-doc-notes {
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
   .invoice-print-page .text-xs,
-  .quotation-print-page .text-xs {
+  .quotation-print-page .text-xs,
+  .statement-print-page .text-xs {
     font-size: 6.75pt !important;
     line-height: 1.25 !important;
   }
 
   .invoice-print-page .text-sm,
-  .quotation-print-page .text-sm {
+  .quotation-print-page .text-sm,
+  .statement-print-page .text-sm {
     font-size: 7.5pt !important;
     line-height: 1.28 !important;
   }
 
   .invoice-print-page .text-base,
-  .quotation-print-page .text-base {
+  .quotation-print-page .text-base,
+  .statement-print-page .text-base {
     font-size: 8.25pt !important;
     line-height: 1.28 !important;
   }
 
   .invoice-print-page .text-lg,
-  .quotation-print-page .text-lg {
+  .quotation-print-page .text-lg,
+  .statement-print-page .text-lg {
     font-size: 9.5pt !important;
     line-height: 1.2 !important;
   }
 
   .invoice-print-page .text-xl,
-  .quotation-print-page .text-xl {
+  .quotation-print-page .text-xl,
+  .statement-print-page .text-xl {
     font-size: 10.5pt !important;
     line-height: 1.15 !important;
   }
 
   .invoice-print-page .text-2xl,
-  .quotation-print-page .text-2xl {
+  .quotation-print-page .text-2xl,
+  .statement-print-page .text-2xl {
     font-size: 11.5pt !important;
     line-height: 1.1 !important;
   }
@@ -475,12 +485,15 @@
   .invoice-print-page table th,
   .invoice-print-page table td,
   .quotation-print-page table th,
-  .quotation-print-page table td {
+  .quotation-print-page table td,
+  .statement-print-page table th,
+  .statement-print-page table td {
     padding: 0.12rem 0.28rem !important;
   }
 
   .invoice-print-page img[alt='logo'],
-  .quotation-print-page img[alt='logo'] {
+  .quotation-print-page img[alt='logo'],
+  .statement-print-page img[alt='logo'] {
     max-height: 9mm !important;
     max-width: 24mm !important;
   }

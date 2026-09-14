@@ -190,15 +190,17 @@ export function CompanyDetailPage() {
 
   return (
     <div className="space-y-3">
-      <AppPageHeader
-        title={company.name}
-        subtitle="Company details"
-        leading={<CompanyLogo path={company.logo_url} name={company.name} size="md" />}
-        showBackButton={true}
-        onBackClick={() => navigate(-1)}
-      />
+      <div className="print:hidden">
+        <AppPageHeader
+          title={company.name}
+          subtitle="Company details"
+          leading={<CompanyLogo path={company.logo_url} name={company.name} size="md" />}
+          showBackButton={true}
+          onBackClick={() => navigate(-1)}
+        />
+      </div>
 
-      <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-700">
+      <div className="print:hidden flex items-end justify-between border-b border-slate-200 dark:border-slate-700">
         <nav className="flex gap-0.5 flex-wrap" aria-label="Tabs">
           {tabButtons.map((tab) => (
             <button
