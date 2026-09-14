@@ -10,6 +10,7 @@ import {
   LuListChecks,
   LuFolderOpen,
   LuShoppingCart,
+  LuCreditCard,
 } from 'react-icons/lu';
 import AppText from '@/components/text/AppText';
 import useThemeStore from '../../stores/state/ThemeStore';
@@ -93,7 +94,8 @@ const AppSidebar = () => {
         {navLink('/app/projects', 'Projects', <LuFolderOpen className="w-4 h-4" />)}
         {navLink('/app/tasks', 'My tasks', <LuListChecks className="w-4 h-4" />)}
       </nav>
-      <div className={`px-2 py-3 border-t ${borderCls}`}>
+      <div className={`px-2 py-3 border-t flex flex-col gap-0.5 ${borderCls}`}>
+        {navLink('/app/billing', 'Billing', <LuCreditCard className="w-4 h-4" />)}
         {navLink('/app/settings', 'Settings', <LuSettings className="w-4 h-4" />)}
       </div>
     </aside>

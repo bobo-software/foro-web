@@ -7,6 +7,7 @@ export { useSessionCheck } from './useSessionCheck';
 export { useTokenRefresh } from './useTokenRefresh';
 export { useIsBusinessOwner } from './useBusinessRole';
 export { useSubscriptionLimits } from './useSubscriptionLimits';
+export { useSubscriptionUsage } from './useSubscriptionUsage';
 
 // WebSocket hooks
 export {

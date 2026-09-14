@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import SubscriptionService from '../../services/subscriptionService';
+import SubscriptionService, { type ChangePlanResult } from '../../services/subscriptionService';
 import type { BillingPeriod, BusinessSubscription, SubscriptionTier } from '../../types/subscription';
 
 /**
@@ -28,6 +28,14 @@ interface SubscriptionState {
   reconcilePending: () => Promise<void>;
   /** Cancels any active paid plan and reverts the business to Free. Returns false (with `error` set) if the API call fails. */
   cancel: () => Promise<boolean>;
+  /** Upgrades/downgrades an already-paying business. Returns null (with `error` set) if the API call fails. */
+  changePlan: (
+    businessId: number,
+    tier: SubscriptionTier,
+    period: BillingPeriod,
+    customerEmail: string,
+    password: string
+  ) => Promise<ChangePlanResult | null>;
 }
 
 export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
@@ -109,6 +117,25 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       const message = err instanceof Error ? err.message : 'Failed to cancel subscription';
       set({ error: message, loading: false });
       return false;
+    }
+  },
+
+  changePlan: async (
+    businessId: number,
+    tier: SubscriptionTier,
+    period: BillingPeriod,
+    customerEmail: string,
+    password: string
+  ) => {
+    set({ loading: true, error: null });
+    try {
+      const result = await SubscriptionService.changePlan(businessId, tier, period, customerEmail, password);
+      set({ currentSubscription: result.subscription, loading: false });
+      return result;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to change your plan';
+      set({ error: message, loading: false });
+      return null;
     }
   },
 }));

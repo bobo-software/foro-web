@@ -128,7 +128,7 @@ export function TeamSettingsTab() {
         {atMemberLimit && (
           <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">
             Your plan is limited to {limits.teamMembers} team members.{' '}
-            <Link to="/app/settings/billing" className="underline">
+            <Link to="/app/billing" className="underline">
               Upgrade to invite more
             </Link>
             .

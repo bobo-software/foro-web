@@ -13,7 +13,7 @@ interface SubscriptionGateProps {
  * businesses and ones created before this feature shipped alike, so no
  * separate backfill/migration job is needed. This does not block rendering:
  * access is never denied here, only capped (see useSubscriptionLimits) —
- * upgrading happens any time from Settings → Billing.
+ * upgrading happens any time from the Billing page.
  */
 export function SubscriptionGate({ children }: SubscriptionGateProps) {
   const sessionUser = useAuthStore((s) => s.sessionUser);

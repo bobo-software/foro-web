@@ -55,6 +55,24 @@ export interface LivePricingPlan {
   currency: string;
 }
 
+export type PlanChangeType = 'upgrade' | 'downgrade';
+
+export interface ChangePlanResult {
+  subscription: BusinessSubscription;
+  changeType: PlanChangeType;
+  /** Major currency unit charged right now, or null when nothing was charged (a scheduled downgrade). */
+  chargedAmount: number | null;
+  /** 'immediate' for an upgrade, or the ISO datetime the downgrade takes effect. */
+  effectiveAt: 'immediate' | string;
+}
+
+interface ChangePlanApiResult {
+  subscription: ApiRow;
+  changeType: PlanChangeType;
+  chargedAmount: number | null;
+  effectiveAt: string;
+}
+
 export class SubscriptionService {
   /** Live per-tier pricing sourced from Paystack — see usePricingStore for the cached/merged view. */
   static async getPlans(): Promise<LivePricingPlan[]> {
@@ -97,6 +115,34 @@ export class SubscriptionService {
   static async cancel(businessId: number): Promise<BusinessSubscription> {
     const response = await foroApiClient.post<ApiRow>('/api/v1/payments/subscription/cancel', { businessId });
     return fromApi(response.data);
+  }
+
+  /**
+   * Switches an already-paying business to a different tier/billing period.
+   * Upgrades charge the prorated difference on the saved card immediately; downgrades
+   * are scheduled to take effect at `effectiveAt` with no charge now. Requires the
+   * user's current login password as a step-up confirmation for this billing action.
+   */
+  static async changePlan(
+    businessId: number,
+    tier: BusinessSubscription['tier'],
+    period: BillingPeriod,
+    customerEmail: string,
+    password: string
+  ): Promise<ChangePlanResult> {
+    const response = await foroApiClient.post<ChangePlanApiResult>('/api/v1/payments/change-plan', {
+      businessId,
+      tier,
+      period,
+      customerEmail,
+      password,
+    });
+    return {
+      subscription: fromApi(response.data.subscription),
+      changeType: response.data.changeType,
+      chargedAmount: response.data.chargedAmount,
+      effectiveAt: response.data.effectiveAt,
+    };
   }
 }
 
