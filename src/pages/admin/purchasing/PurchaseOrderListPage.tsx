@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AppDataTable, type AppDataTableColumn } from '@/components/elements/AppDataTable';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
 import { useCompanyStore } from '@/stores/data/CompanyStore';
+import { useSupplierStore } from '@/stores/data/SupplierStore';
 import PurchaseOrderService from '@/services/purchaseOrderService';
 import type { PurchaseOrder } from '@/types/purchase';
 import { formatCurrency } from '@/utils/currency';
@@ -19,13 +20,16 @@ export function PurchaseOrderListPage() {
   const businessId = useBusinessStore((s) => s.currentBusiness?.id);
   const companies = useCompanyStore((s) => s.companies);
   const fetchCompanies = useCompanyStore((s) => s.fetchCompanies);
+  const suppliers = useSupplierStore((s) => s.suppliers);
+  const fetchSuppliers = useSupplierStore((s) => s.fetchSuppliers);
   const [rows, setRows] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchCompanies();
-  }, [fetchCompanies]);
+    void fetchSuppliers();
+  }, [fetchCompanies, fetchSuppliers]);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,13 +51,20 @@ export function PurchaseOrderListPage() {
     };
   }, [businessId]);
 
-  const nameById = useMemo(() => {
+  const companyNameById = useMemo(() => {
     const map = new Map<number, string>();
     for (const c of companies) {
       if (c.id != null) map.set(c.id, c.name);
     }
     return map;
   }, [companies]);
+  const supplierNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const s of suppliers) {
+      if (s.id != null) map.set(s.id, s.name);
+    }
+    return map;
+  }, [suppliers]);
 
   const columns = useMemo<AppDataTableColumn<PurchaseOrder>[]>(
     () => [
@@ -67,7 +78,10 @@ export function PurchaseOrderListPage() {
         id: 'supplier',
         header: 'Supplier',
         cellClassName: 'font-medium text-slate-800 dark:text-slate-100',
-        render: (row) => (row.company_id != null ? nameById.get(row.company_id) : undefined) ?? '—',
+        render: (row) =>
+          (row.supplier_id != null ? supplierNameById.get(row.supplier_id) : undefined) ??
+          (row.company_id != null ? companyNameById.get(row.company_id) : undefined) ??
+          '—',
       },
       {
         id: 'issue_date',
@@ -90,7 +104,7 @@ export function PurchaseOrderListPage() {
         render: (row) => formatCurrency(row.total, row.currency),
       },
     ],
-    [nameById],
+    [supplierNameById, companyNameById],
   );
 
   if (loading) {

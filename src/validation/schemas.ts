@@ -82,6 +82,22 @@ export const companySchema = z.object({
 
 export type CompanyInput = z.infer<typeof companySchema>;
 
+// ── Supplier ───────────────────────────────────────────────────────
+export const supplierSchema = z.object({
+  name: nonEmptyString('Supplier name'),
+  contact_person: z.string().optional(),
+  email: z.string().email('Invalid email').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  vat_number: z.string().optional(),
+  registration_number: z.string().optional(),
+  payment_terms_days: z.number().int().min(0).optional(),
+  currency: z.string().optional(),
+  notes: z.string().max(2000).optional(),
+});
+
+export type SupplierInput = z.infer<typeof supplierSchema>;
+
 // ── Item ───────────────────────────────────────────────────────────
 export const itemSchema = z.object({
   name: nonEmptyString('Item name'),

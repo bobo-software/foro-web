@@ -1,6 +1,5 @@
 import { foroApiClient } from '../backend';
 import type { CreatePurchaseOrderDto, PurchaseOrder, PurchaseOrderItem } from '../types/purchase';
-import { computeNextDocumentNumber } from '../utils/documentNumber';
 
 const BASE = '/api/v1/purchase-orders';
 const ITEMS = '/api/v1/purchase-order-items';
@@ -8,9 +7,12 @@ const ITEMS = '/api/v1/purchase-order-items';
 interface ApiPoRow {
   id: number;
   companyId: number | null;
+  supplierId: number | null;
   businessId: number | null;
   poNumber: string;
   status: string;
+  quoteReference: string | null;
+  approvalStatus: string | null;
   issueDate: string;
   expectedDeliveryDate: string | null;
   subtotal: string;
@@ -30,6 +32,7 @@ interface ApiPoItemRow {
   id: number;
   purchaseOrderId: number;
   itemId: number | null;
+  supplierItemId: number | null;
   description: string;
   quantity: number;
   unitCost: string;
@@ -43,10 +46,13 @@ export function normalizePurchaseOrder(row: ApiPoRow): PurchaseOrder {
   return {
     id: row.id,
     company_id: row.companyId,
+    supplier_id: row.supplierId,
     business_id: row.businessId,
     project_id: row.projectId,
     po_number: row.poNumber,
     status: (row.status as PurchaseOrder['status']) ?? 'draft',
+    quote_reference: row.quoteReference ?? undefined,
+    approval_status: (row.approvalStatus as PurchaseOrder['approval_status']) ?? 'not_required',
     issue_date: row.issueDate,
     expected_delivery_date: row.expectedDeliveryDate ?? undefined,
     subtotal: Number(row.subtotal) || 0,
@@ -67,6 +73,7 @@ function normalizeItem(row: ApiPoItemRow): PurchaseOrderItem {
     id: row.id,
     purchase_order_id: row.purchaseOrderId,
     item_id: row.itemId,
+    supplier_item_id: row.supplierItemId,
     description: row.description,
     quantity: Number(row.quantity) || 0,
     unit_cost: Number(row.unitCost) || 0,
@@ -80,10 +87,12 @@ function normalizeItem(row: ApiPoItemRow): PurchaseOrderItem {
 function toHeaderBody(data: Partial<CreatePurchaseOrderDto>): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   if (data.company_id !== undefined) body.companyId = data.company_id;
+  if (data.supplier_id !== undefined) body.supplierId = data.supplier_id;
   if (data.business_id !== undefined) body.businessId = data.business_id;
   if (data.project_id !== undefined) body.projectId = data.project_id;
-  if (data.po_number !== undefined) body.poNumber = data.po_number;
   if (data.status !== undefined) body.status = data.status;
+  if (data.quote_reference !== undefined) body.quoteReference = data.quote_reference;
+  if (data.approval_status !== undefined) body.approvalStatus = data.approval_status;
   if (data.issue_date !== undefined) body.issueDate = data.issue_date;
   if (data.expected_delivery_date !== undefined) body.expectedDeliveryDate = data.expected_delivery_date;
   if (data.subtotal !== undefined) body.subtotal = data.subtotal;
@@ -107,6 +116,7 @@ export class PurchaseOrderService {
       limit: params?.limit ?? 200,
       offset: params?.offset ?? 0,
       ...((where.company_id ?? where.companyId) !== undefined && { companyId: where.company_id ?? where.companyId }),
+      ...((where.supplier_id ?? where.supplierId) !== undefined && { supplierId: where.supplier_id ?? where.supplierId }),
       ...((where.business_id ?? where.businessId) !== undefined && { businessId: where.business_id ?? where.businessId }),
       ...((where.status) !== undefined && { status: where.status }),
     });
@@ -131,13 +141,13 @@ export class PurchaseOrderService {
     return (response.data ?? []).map(normalizeItem);
   }
 
-  static async nextNumber(businessId: number): Promise<string> {
-    const rows = await this.findAll({ where: { business_id: businessId }, limit: 200 });
-    return computeNextDocumentNumber(rows.map((r) => r.po_number), 'PO-');
-  }
-
   static async create(data: CreatePurchaseOrderDto): Promise<PurchaseOrder> {
     const response = await foroApiClient.post<ApiPoRow>(BASE, toHeaderBody(data));
+    return normalizePurchaseOrder(response.data);
+  }
+
+  static async update(id: number, data: Partial<CreatePurchaseOrderDto>): Promise<PurchaseOrder> {
+    const response = await foroApiClient.put<ApiPoRow>(`${BASE}/${id}`, toHeaderBody(data));
     return normalizePurchaseOrder(response.data);
   }
 
@@ -146,6 +156,7 @@ export class PurchaseOrderService {
     purchaseOrder: Partial<CreatePurchaseOrderDto>,
     lines: Array<{
       item_id?: number;
+      supplier_item_id?: number;
       description: string;
       quantity: number;
       unit_cost: number;
@@ -160,6 +171,7 @@ export class PurchaseOrderService {
         purchaseOrder: toHeaderBody(purchaseOrder),
         lines: lines.map((line) => ({
           itemId: line.item_id,
+          supplierItemId: line.supplier_item_id,
           description: line.description,
           quantity: line.quantity,
           unitCost: line.unit_cost,

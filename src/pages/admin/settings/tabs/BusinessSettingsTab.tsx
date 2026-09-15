@@ -12,6 +12,7 @@ import { companySchema } from '@/validation/schemas';
 import AppLabledInput from '@/components/forms/AppLabledInput';
 import { BusinessAddressSection } from './BusinessAddressSection';
 import { BusinessCredentialsSection } from './BusinessCredentialsSection';
+import PurchaseApprovalSettingService from '@/services/purchaseApprovalSettingService';
 
 export function BusinessSettingsTab() {
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
@@ -385,6 +386,96 @@ export function BusinessSettingsTab() {
           </button>
         </div>
       </form>
+
+      <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+        <PurchaseApprovalThresholdSection businessId={currentBusiness.id!} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Purchase order approval threshold ────────────────────────────────────
+
+function PurchaseApprovalThresholdSection({ businessId }: { businessId: number }) {
+  const [settingId, setSettingId] = useState<number | null>(null);
+  const [threshold, setThreshold] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    PurchaseApprovalSettingService.findAll({ where: { business_id: businessId } })
+      .then((rows) => {
+        if (cancelled) return;
+        const existing = rows[0];
+        if (existing) {
+          setSettingId(existing.id ?? null);
+          setThreshold(existing.auto_approve_threshold != null ? String(existing.auto_approve_threshold) : '');
+        }
+      })
+      .catch(() => {
+        // Non-blocking — threshold just won't be prefilled.
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [businessId]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const value = threshold.trim() ? Number(threshold) : null;
+      if (settingId) {
+        await PurchaseApprovalSettingService.update(settingId, { auto_approve_threshold: value });
+      } else {
+        const created = await PurchaseApprovalSettingService.create({
+          business_id: businessId,
+          auto_approve_threshold: value,
+        });
+        setSettingId(created.id ?? null);
+      }
+      toast.success('Approval threshold saved');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save approval threshold');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+        Purchase order approvals
+      </h3>
+      <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+        Purchase orders at or above this amount are flagged &quot;Pending approval&quot; until someone approves
+        them. Leave blank to never require approval.
+      </p>
+      <div className="flex items-end gap-3 max-w-xs">
+        <AppLabledInput
+          id="approval-threshold"
+          label="Auto-approve threshold"
+          type="number"
+          min={0}
+          step={0.01}
+          value={threshold}
+          onChange={(e) => setThreshold(e.target.value)}
+          disabled={loading || saving}
+          placeholder="e.g. 10000"
+        />
+        <button
+          type="button"
+          disabled={loading || saving}
+          onClick={() => void handleSave()}
+          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+      </div>
     </div>
   );
 }

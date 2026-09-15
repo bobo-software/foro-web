@@ -7,6 +7,7 @@ const PAYMENTS = '/api/v1/bill-payments';
 interface ApiBillRow {
   id: number;
   companyId: number | null;
+  supplierId: number | null;
   businessId: number | null;
   purchaseOrderId: number | null;
   billNumber: string;
@@ -40,6 +41,7 @@ function normalizeBill(row: ApiBillRow): Bill {
   return {
     id: row.id,
     company_id: row.companyId,
+    supplier_id: row.supplierId,
     business_id: row.businessId,
     purchase_order_id: row.purchaseOrderId,
     bill_number: row.billNumber,
@@ -83,6 +85,7 @@ export class BillService {
       limit: params?.limit ?? 200,
       offset: params?.offset ?? 0,
       ...((where.company_id ?? where.companyId) !== undefined && { companyId: where.company_id ?? where.companyId }),
+      ...((where.supplier_id ?? where.supplierId) !== undefined && { supplierId: where.supplier_id ?? where.supplierId }),
       ...((where.business_id ?? where.businessId) !== undefined && { businessId: where.business_id ?? where.businessId }),
       ...((where.purchase_order_id ?? where.purchaseOrderId) !== undefined && {
         purchaseOrderId: where.purchase_order_id ?? where.purchaseOrderId,

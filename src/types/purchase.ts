@@ -1,13 +1,17 @@
 export type PurchaseOrderStatus = 'draft' | 'sent' | 'received' | 'cancelled';
 export type BillStatus = 'unpaid' | 'partially_paid' | 'paid' | 'cancelled';
+export type PurchaseOrderApprovalStatus = 'not_required' | 'pending' | 'approved';
 
 export interface PurchaseOrder {
   id?: number;
   company_id?: number | null;
+  supplier_id?: number | null;
   business_id?: number | null;
   project_id?: number | null;
   po_number: string;
   status: PurchaseOrderStatus;
+  quote_reference?: string;
+  approval_status?: PurchaseOrderApprovalStatus;
   issue_date: string;
   expected_delivery_date?: string;
   subtotal: number;
@@ -26,6 +30,7 @@ export interface PurchaseOrderItem {
   id?: number;
   purchase_order_id: number;
   item_id?: number | null;
+  supplier_item_id?: number | null;
   description: string;
   quantity: number;
   unit_cost: number;
@@ -37,10 +42,12 @@ export interface PurchaseOrderItem {
 
 export interface CreatePurchaseOrderDto {
   company_id?: number;
+  supplier_id?: number;
   business_id: number;
   project_id?: number;
-  po_number: string;
   status: PurchaseOrderStatus;
+  quote_reference?: string;
+  approval_status?: PurchaseOrderApprovalStatus;
   issue_date: string;
   expected_delivery_date?: string;
   subtotal: number;
@@ -55,6 +62,7 @@ export interface CreatePurchaseOrderDto {
 export interface Bill {
   id?: number;
   company_id?: number | null;
+  supplier_id?: number | null;
   business_id?: number | null;
   purchase_order_id?: number | null;
   bill_number: string;
@@ -92,4 +100,11 @@ export interface CreateBillPaymentDto {
   date: string;
   reference?: string;
   payment_method?: string;
+}
+
+export interface PurchaseApprovalSetting {
+  id?: number;
+  business_id: number;
+  auto_approve_threshold?: number | null;
+  currency?: string;
 }

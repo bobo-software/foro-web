@@ -50,6 +50,9 @@ const PurchaseOrderListPage = lazy(() => import('@pages/admin/purchasing/Purchas
 const PurchaseOrderFormPage = lazy(() => import('@pages/admin/purchasing/PurchaseOrderFormPage').then((m) => ({ default: m.PurchaseOrderFormPage })));
 const PurchaseOrderDetailPage = lazy(() => import('@pages/admin/purchasing/PurchaseOrderDetailPage').then((m) => ({ default: m.PurchaseOrderDetailPage })));
 const BillsPage = lazy(() => import('@pages/admin/purchasing/BillsPage').then((m) => ({ default: m.BillsPage })));
+const SupplierListPage = lazy(() => import('@/pages/admin/suppliers/SupplierListPage').then((m) => ({ default: m.SupplierListPage })));
+const SupplierFormPage = lazy(() => import('@/pages/admin/suppliers/SupplierFormPage').then((m) => ({ default: m.SupplierFormPage })));
+const SupplierDetailPage = lazy(() => import('@/pages/admin/suppliers/supplierPage/SupplierDetailPage').then((m) => ({ default: m.SupplierDetailPage })));
 const QuotationListPage = lazy(() => import('@pages/admin/QuotationListPage').then((m) => ({ default: m.QuotationListPage })));
 const QuotationDetailPage = lazy(() => import('@pages/admin/QuotationDetailPage').then((m) => ({ default: m.QuotationDetailPage })));
 const QuotationFormPage = lazy(() => import('@pages/admin/QuotationFormPage').then((m) => ({ default: m.QuotationFormPage })));
@@ -217,11 +220,15 @@ function App() {
               <Route path="purchasing" element={<PurchasingPage />}>
                 <Route index element={<Navigate to="orders" replace />} />
                 <Route path="orders" element={<PurchaseOrderListPage />} />
+                <Route path="suppliers" element={<SupplierListPage />} />
                 <Route path="bills" element={<BillsPage />} />
               </Route>
               <Route path="purchasing/orders/create" element={<PurchaseOrderFormPage />} />
               <Route path="purchasing/orders/:id" element={<PurchaseOrderDetailPage />} />
               <Route path="purchasing/orders/:id/edit" element={<PurchaseOrderFormPage />} />
+              <Route path="purchasing/suppliers/create" element={<SupplierFormPage />} />
+              <Route path="purchasing/suppliers/:id" element={<SupplierDetailPage />} />
+              <Route path="purchasing/suppliers/:id/edit" element={<SupplierFormPage />} />
               <Route path="quotations" element={<Outlet />}>
                 <Route index element={<QuotationListPage />} />
                 <Route path="create" element={<QuotationFormPage />} />
