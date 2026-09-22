@@ -11,6 +11,10 @@ export interface BankingDetails {
   user_id?: number;
   /** Reference to company (optional) */
   company_id?: number;
+  /** Reference to supplier / AP vendor (optional) */
+  supplier_id?: number;
+  /** Reference to employee (optional) */
+  employee_id?: number;
   /** Label for this account (e.g., "Primary Business Account", "Savings") */
   label?: string;
   /** Name of the bank */
@@ -42,6 +46,8 @@ export interface BankingDetails {
 export interface CreateBankingDetailsDto {
   user_id?: number;
   company_id?: number;
+  supplier_id?: number;
+  employee_id?: number;
   label?: string;
   bank_name: string;
   account_holder?: string;

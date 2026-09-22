@@ -48,4 +48,41 @@ export function useIsBusinessOwner(businessId: number | null | undefined): Busin
   return { isOwner: isOwnerCompanyUser, isLoading };
 }
 
+export interface PayrollAccessCheck {
+  canManage: boolean;
+  isLoading: boolean;
+}
+
+/** Owner/admin only — payroll is salary PII, not a member-facing module. */
+export function useCanManagePayroll(businessId: number | null | undefined): PayrollAccessCheck {
+  const sessionUser = useAuthStore((s) => s.sessionUser);
+  const members = useTeamStore((s) => s.members);
+  const isLoading = useTeamStore((s) => s.isLoading);
+  const fetchMembers = useTeamStore((s) => s.fetchMembers);
+  const currentBusiness = useBusinessStore((s) => s.currentBusiness);
+
+  useEffect(() => {
+    if (businessId != null) {
+      void fetchMembers(businessId);
+    }
+  }, [businessId, fetchMembers]);
+
+  if (businessId == null || !sessionUser?.id) return { canManage: false, isLoading };
+
+  const userId = Number(sessionUser.id);
+  const myMembership = members.find(
+    (m) => m.business_id === businessId && m.user_id === userId && m.status === 'active',
+  );
+  if (myMembership) {
+    return {
+      canManage: myMembership.role_key === 'owner' || myMembership.role_key === 'admin',
+      isLoading,
+    };
+  }
+
+  const isOwnerCompanyUser =
+    currentBusiness?.id === businessId && Number(currentBusiness?.user_id) === userId;
+  return { canManage: isOwnerCompanyUser, isLoading };
+}
+
 export default useIsBusinessOwner;

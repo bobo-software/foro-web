@@ -5,6 +5,9 @@ import { AppDataTable, type AppDataTableColumn } from '@/components/elements/App
 import { useSupplierStore } from '@/stores/data/SupplierStore';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
 import type { Supplier } from '@/types/supplier';
+import { SUPPLIER_COST_TYPE_OPTIONS } from '@/types/supplier';
+import { formatCalendarDate } from '@/utils/recurrence';
+import { localDateISO } from '@/utils/localDateISO';
 
 const supplierColumns: AppDataTableColumn<Supplier>[] = [
   {
@@ -12,6 +15,13 @@ const supplierColumns: AppDataTableColumn<Supplier>[] = [
     header: 'Name',
     cellClassName: 'font-medium text-slate-800 dark:text-slate-100',
     render: (s) => s.name,
+  },
+  {
+    id: 'cost_type',
+    header: 'Cost type',
+    cellClassName: 'text-slate-600 dark:text-slate-300',
+    render: (s) =>
+      SUPPLIER_COST_TYPE_OPTIONS.find((o) => o.value === s.cost_type)?.label ?? '—',
   },
   {
     id: 'contact_person',
@@ -30,6 +40,20 @@ const supplierColumns: AppDataTableColumn<Supplier>[] = [
     header: 'Phone',
     cellClassName: 'text-slate-600 dark:text-slate-300',
     render: (s) => s.phone ?? '—',
+  },
+  {
+    id: 'next_expected_payment_date',
+    header: 'Next payment',
+    cellClassName: 'text-slate-600 dark:text-slate-300',
+    render: (s) => {
+      if (!s.next_expected_payment_date) return '—';
+      const overdue = s.next_expected_payment_date < localDateISO();
+      return (
+        <span className={overdue ? 'font-medium text-red-700 dark:text-red-300' : undefined}>
+          {formatCalendarDate(s.next_expected_payment_date)}
+        </span>
+      );
+    },
   },
   {
     id: 'vat_number',

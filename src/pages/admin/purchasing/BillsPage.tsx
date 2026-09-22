@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { AppDataTable, type AppDataTableColumn } from '@/components/elements/AppDataTable';
 import AppInputLabeled from '@/components/forms/AppLabledInput';
 import AppLabeledSelectInput from '@/components/forms/AppLabledSelectInput';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
 import { useCompanyStore } from '@/stores/data/CompanyStore';
-import { BillPaymentService, BillService } from '@/services/billService';
+import { useSupplierStore } from '@/stores/data/SupplierStore';
+import { useBillStore } from '@/stores/data/BillStore';
 import type { Bill } from '@/types/purchase';
+import type { Supplier } from '@/types/supplier';
 import { formatCurrency } from '@/utils/currency';
 import { PAYMENT_METHODS } from '@/types/payment';
+import { localDateISO } from '@/utils/localDateISO';
+import { formatCalendarDate, RECURRENCE_INTERVAL_OPTIONS } from '@/utils/recurrence';
 
 const STATUS_CLASSES: Record<string, string> = {
   unpaid: 'bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200',
@@ -21,8 +26,13 @@ export function BillsPage() {
   const businessId = useBusinessStore((s) => s.currentBusiness?.id);
   const companies = useCompanyStore((s) => s.companies);
   const fetchCompanies = useCompanyStore((s) => s.fetchCompanies);
-  const [bills, setBills] = useState<Bill[]>([]);
-  const [loading, setLoading] = useState(true);
+  const suppliers = useSupplierStore((s) => s.suppliers);
+  const fetchSuppliers = useSupplierStore((s) => s.fetchSuppliers);
+  const bills = useBillStore((s) => s.bills);
+  const loading = useBillStore((s) => s.loading);
+  const error = useBillStore((s) => s.error);
+  const fetchBills = useBillStore((s) => s.fetchBills);
+  const recordPayment = useBillStore((s) => s.recordPayment);
   const [paying, setPaying] = useState<Bill | null>(null);
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -30,36 +40,34 @@ export function BillsPage() {
   const [method, setMethod] = useState('eft');
   const [saving, setSaving] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const data = await BillService.findAll({
-        where: businessId != null ? { business_id: businessId } : undefined,
-      });
-      setBills(data);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load bills');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     void fetchCompanies();
-  }, [fetchCompanies]);
+    void fetchSuppliers();
+  }, [fetchCompanies, fetchSuppliers]);
 
   useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [businessId]);
+    void fetchBills();
+  }, [fetchBills, businessId]);
 
-  const nameById = useMemo(() => {
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
+
+  const companyNameById = useMemo(() => {
     const map = new Map<number, string>();
     for (const c of companies) {
       if (c.id != null) map.set(c.id, c.name);
     }
     return map;
   }, [companies]);
+
+  const supplierNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const s of suppliers) {
+      if (s.id != null) map.set(s.id, s.name);
+    }
+    return map;
+  }, [suppliers]);
 
   const openPay = (bill: Bill) => {
     setPaying(bill);
@@ -79,7 +87,7 @@ export function BillsPage() {
     }
     setSaving(true);
     try {
-      await BillPaymentService.create({
+      await recordPayment({
         bill_id: paying.id,
         business_id: businessId,
         amount: value,
@@ -90,7 +98,6 @@ export function BillsPage() {
       });
       toast.success('Payment recorded');
       setPaying(null);
-      await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to record payment');
     } finally {
@@ -109,7 +116,10 @@ export function BillsPage() {
       {
         id: 'supplier',
         header: 'Supplier',
-        render: (row) => (row.company_id != null ? nameById.get(row.company_id) : undefined) ?? '—',
+        render: (row) =>
+          (row.supplier_id != null ? supplierNameById.get(row.supplier_id) : undefined) ??
+          (row.company_id != null ? companyNameById.get(row.company_id) : undefined) ??
+          '—',
       },
       {
         id: 'status',
@@ -144,17 +154,100 @@ export function BillsPage() {
           ),
       },
     ],
-    [nameById],
+    [companyNameById, supplierNameById],
+  );
+
+  const today = localDateISO();
+  const upcoming = useMemo(
+    () =>
+      suppliers
+        .filter((s) => Boolean(s.next_expected_payment_date))
+        .sort((a, b) =>
+          (a.next_expected_payment_date ?? '').localeCompare(b.next_expected_payment_date ?? ''),
+        ),
+    [suppliers],
+  );
+
+  const upcomingColumns = useMemo<AppDataTableColumn<Supplier>[]>(
+    () => [
+      {
+        id: 'name',
+        header: 'Supplier',
+        cellClassName: 'font-medium text-slate-800 dark:text-slate-100',
+        render: (row) => row.name,
+      },
+      {
+        id: 'next',
+        header: 'Next expected payment',
+        render: (row) => {
+          const date = row.next_expected_payment_date;
+          if (!date) return '—';
+          const overdue = date < today;
+          const dueToday = date === today;
+          return (
+            <span className={overdue ? 'font-medium text-red-700 dark:text-red-300' : dueToday ? 'font-medium text-amber-700 dark:text-amber-300' : ''}>
+              {formatCalendarDate(date)}
+              {overdue ? ' · overdue' : dueToday ? ' · due today' : ''}
+            </span>
+          );
+        },
+      },
+      {
+        id: 'amount',
+        header: 'Expected amount',
+        align: 'right',
+        render: (row) =>
+          row.expected_amount != null ? formatCurrency(row.expected_amount, row.currency) : '—',
+      },
+      {
+        id: 'repeats',
+        header: 'Repeats',
+        render: (row) =>
+          RECURRENCE_INTERVAL_OPTIONS.find((o) => o.value === row.recurrence_interval)?.label ?? '—',
+      },
+      {
+        id: 'record',
+        header: '',
+        render: (row) =>
+          row.id != null ? (
+            <Link
+              to={`/app/purchasing/bills/record-expense?supplierId=${row.id}`}
+              className="text-xs font-medium text-indigo-600 dark:text-indigo-400 no-underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Record expense
+            </Link>
+          ) : null,
+      },
+    ],
+    [today],
   );
 
   return (
     <div className="space-y-4">
+      {upcoming.length > 0 && (
+        <AppDataTable
+          title="Upcoming expected payments"
+          columns={upcomingColumns}
+          data={upcoming}
+          getRowKey={(row, index) => row.id ?? `upcoming-${index}`}
+          getRowClassName={(row) =>
+            row.next_expected_payment_date && row.next_expected_payment_date < today
+              ? 'bg-red-50/50 dark:bg-red-900/10'
+              : row.next_expected_payment_date === today
+                ? 'bg-amber-50/50 dark:bg-amber-900/10'
+                : ''
+          }
+          emptyMessage="No upcoming expected payments."
+        />
+      )}
+
       <AppDataTable
         columns={columns}
         data={bills}
         getRowKey={(row) => String(row.id)}
         loading={loading}
-        emptyMessage="No supplier bills yet. Receive a purchase order to create one."
+        emptyMessage="No supplier bills yet. Record an expense or receive a purchase order."
       />
 
       {paying && (

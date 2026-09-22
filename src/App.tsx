@@ -50,6 +50,25 @@ const PurchaseOrderListPage = lazy(() => import('@pages/admin/purchasing/Purchas
 const PurchaseOrderFormPage = lazy(() => import('@pages/admin/purchasing/PurchaseOrderFormPage').then((m) => ({ default: m.PurchaseOrderFormPage })));
 const PurchaseOrderDetailPage = lazy(() => import('@pages/admin/purchasing/PurchaseOrderDetailPage').then((m) => ({ default: m.PurchaseOrderDetailPage })));
 const BillsPage = lazy(() => import('@pages/admin/purchasing/BillsPage').then((m) => ({ default: m.BillsPage })));
+const RecordExpensePage = lazy(() => import('@pages/admin/purchasing/RecordExpensePage').then((m) => ({ default: m.RecordExpensePage })));
+const PayrollPage = lazy(() => import('@pages/admin/payroll/PayrollPage').then((m) => ({ default: m.PayrollPage })));
+const EmployeeListPage = lazy(() => import('@pages/admin/payroll/EmployeeListPage').then((m) => ({ default: m.EmployeeListPage })));
+const EmployeeFormPage = lazy(() => import('@pages/admin/payroll/EmployeeFormPage').then((m) => ({ default: m.EmployeeFormPage })));
+const EmployeeDetailPage = lazy(() => import('@pages/admin/payroll/EmployeeDetailPage').then((m) => ({ default: m.EmployeeDetailPage })));
+const EmployerSettingsPage = lazy(() => import('@pages/admin/payroll/EmployerSettingsPage').then((m) => ({ default: m.EmployerSettingsPage })));
+const PayRunListPage = lazy(() => import('@pages/admin/payroll/PayRunListPage').then((m) => ({ default: m.PayRunListPage })));
+const PayRunFormPage = lazy(() => import('@pages/admin/payroll/PayRunFormPage').then((m) => ({ default: m.PayRunFormPage })));
+const PayRunDetailPage = lazy(() => import('@pages/admin/payroll/PayRunDetailPage').then((m) => ({ default: m.PayRunDetailPage })));
+const Emp201ListPage = lazy(() => import('@pages/admin/payroll/Emp201ListPage').then((m) => ({ default: m.Emp201ListPage })));
+const Emp201FormPage = lazy(() => import('@pages/admin/payroll/Emp201FormPage').then((m) => ({ default: m.Emp201FormPage })));
+const Emp201DetailPage = lazy(() => import('@pages/admin/payroll/Emp201DetailPage').then((m) => ({ default: m.Emp201DetailPage })));
+const YearEndListPage = lazy(() => import('@pages/admin/payroll/YearEndListPage').then((m) => ({ default: m.YearEndListPage })));
+const YearEndFormPage = lazy(() => import('@pages/admin/payroll/YearEndFormPage').then((m) => ({ default: m.YearEndFormPage })));
+const YearEndDetailPage = lazy(() => import('@pages/admin/payroll/YearEndDetailPage').then((m) => ({ default: m.YearEndDetailPage })));
+const Emp501ListPage = lazy(() => import('@pages/admin/payroll/Emp501ListPage').then((m) => ({ default: m.Emp501ListPage })));
+const Emp501FormPage = lazy(() => import('@pages/admin/payroll/Emp501FormPage').then((m) => ({ default: m.Emp501FormPage })));
+const Emp501DetailPage = lazy(() => import('@pages/admin/payroll/Emp501DetailPage').then((m) => ({ default: m.Emp501DetailPage })));
+const PayrollOverviewPage = lazy(() => import('@pages/admin/payroll/PayrollOverviewPage').then((m) => ({ default: m.PayrollOverviewPage })));
 const SupplierListPage = lazy(() => import('@/pages/admin/suppliers/SupplierListPage').then((m) => ({ default: m.SupplierListPage })));
 const SupplierFormPage = lazy(() => import('@/pages/admin/suppliers/SupplierFormPage').then((m) => ({ default: m.SupplierFormPage })));
 const SupplierDetailPage = lazy(() => import('@/pages/admin/suppliers/supplierPage/SupplierDetailPage').then((m) => ({ default: m.SupplierDetailPage })));
@@ -76,6 +95,7 @@ const StatementPortalEntryPage = lazy(() => import('@pages/statements/StatementP
 const StatementPortalViewPage = lazy(() => import('@pages/statements/StatementPortalViewPage').then((m) => ({ default: m.StatementPortalViewPage })));
 const StatementPortalInvoiceViewPage = lazy(() => import('@pages/statements/StatementPortalInvoiceViewPage').then((m) => ({ default: m.StatementPortalInvoiceViewPage })));
 const RequestLogsPage = lazy(() => import('@pages/superadmin/RequestLogsPage').then((m) => ({ default: m.RequestLogsPage })));
+const KnownCompaniesPage = lazy(() => import('@pages/superadmin/KnownCompaniesPage').then((m) => ({ default: m.KnownCompaniesPage })));
 
 /**
  * Auth and WebSocket hooks wrapper component
@@ -162,6 +182,14 @@ function App() {
                 </RequireSuperAdmin>
               }
             />
+            <Route
+              path="/superadmin/known-companies"
+              element={
+                <RequireSuperAdmin>
+                  <KnownCompaniesPage />
+                </RequireSuperAdmin>
+              }
+            />
             <Route path="/invite/:token" element={<InviteAccept />} />
             <Route path="/invite/:token/accept" element={<InvitePostAuth />} />
             <Route path="/portal/v/:portalToken" element={<PortalProjectViewPage />} />
@@ -226,9 +254,31 @@ function App() {
               <Route path="purchasing/orders/create" element={<PurchaseOrderFormPage />} />
               <Route path="purchasing/orders/:id" element={<PurchaseOrderDetailPage />} />
               <Route path="purchasing/orders/:id/edit" element={<PurchaseOrderFormPage />} />
+              <Route path="purchasing/bills/record-expense" element={<RecordExpensePage />} />
               <Route path="purchasing/suppliers/create" element={<SupplierFormPage />} />
               <Route path="purchasing/suppliers/:id" element={<SupplierDetailPage />} />
               <Route path="purchasing/suppliers/:id/edit" element={<SupplierFormPage />} />
+              <Route path="payroll" element={<PayrollPage />}>
+                <Route index element={<Navigate to="overview" replace />} />
+                <Route path="overview" element={<PayrollOverviewPage />} />
+                <Route path="employees" element={<EmployeeListPage />} />
+                <Route path="runs" element={<PayRunListPage />} />
+                <Route path="emp201" element={<Emp201ListPage />} />
+                <Route path="emp501" element={<Emp501ListPage />} />
+                <Route path="year-end" element={<YearEndListPage />} />
+                <Route path="employer" element={<EmployerSettingsPage />} />
+              </Route>
+              <Route path="payroll/employees/create" element={<EmployeeFormPage />} />
+              <Route path="payroll/employees/:id" element={<EmployeeDetailPage />} />
+              <Route path="payroll/employees/:id/edit" element={<EmployeeFormPage />} />
+              <Route path="payroll/runs/create" element={<PayRunFormPage />} />
+              <Route path="payroll/runs/:id" element={<PayRunDetailPage />} />
+              <Route path="payroll/emp201/create" element={<Emp201FormPage />} />
+              <Route path="payroll/emp201/:id" element={<Emp201DetailPage />} />
+              <Route path="payroll/year-end/create" element={<YearEndFormPage />} />
+              <Route path="payroll/year-end/:id" element={<YearEndDetailPage />} />
+              <Route path="payroll/emp501/create" element={<Emp501FormPage />} />
+              <Route path="payroll/emp501/:id" element={<Emp501DetailPage />} />
               <Route path="quotations" element={<Outlet />}>
                 <Route index element={<QuotationListPage />} />
                 <Route path="create" element={<QuotationFormPage />} />

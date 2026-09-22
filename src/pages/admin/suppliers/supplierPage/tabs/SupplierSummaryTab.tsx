@@ -1,5 +1,8 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { formatCurrency } from '@/utils/currency';
+import { formatCalendarDate, RECURRENCE_INTERVAL_OPTIONS } from '@/utils/recurrence';
+import { localDateISO } from '@/utils/localDateISO';
 import type { SupplierTabProps } from './types';
 
 export function SupplierSummaryTab({ supplier, purchaseOrders, bills, loading }: SupplierTabProps) {
@@ -28,6 +31,13 @@ export function SupplierSummaryTab({ supplier, purchaseOrders, bills, loading }:
   }, [purchaseOrders]);
 
   const hasCredentials = supplier.vat_number || supplier.registration_number || supplier.payment_terms_days;
+  const intervalLabel = RECURRENCE_INTERVAL_OPTIONS.find((o) => o.value === supplier.recurrence_interval)?.label;
+  const nextDate = supplier.next_expected_payment_date;
+  const today = localDateISO();
+  const nextDateTone =
+    nextDate && nextDate < today ? 'overdue' : nextDate === today ? 'today' : 'upcoming';
+  const recordHref =
+    supplier.id != null ? `/app/purchasing/bills/record-expense?supplierId=${supplier.id}` : '/app/purchasing/bills/record-expense';
 
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm divide-y divide-slate-100 dark:divide-slate-700">
@@ -110,6 +120,50 @@ export function SupplierSummaryTab({ supplier, purchaseOrders, bills, loading }:
           </div>
         )}
       </div>
+
+      {(intervalLabel || nextDate) && (
+        <div className="p-4">
+          <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
+            Recurring expense
+          </p>
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+            {intervalLabel && (
+              <div>
+                <dt className="text-xs text-slate-400 dark:text-slate-500">Repeats</dt>
+                <dd className="mt-0.5 text-sm text-slate-800 dark:text-slate-200">{intervalLabel}</dd>
+              </div>
+            )}
+            {nextDate && (
+              <div>
+                <dt className="text-xs text-slate-400 dark:text-slate-500">Next expected payment</dt>
+                <dd
+                  className={`mt-0.5 text-sm ${
+                    nextDateTone === 'overdue'
+                      ? 'font-medium text-red-700 dark:text-red-300'
+                      : nextDateTone === 'today'
+                        ? 'font-medium text-amber-700 dark:text-amber-300'
+                        : 'text-slate-800 dark:text-slate-200'
+                  }`}
+                >
+                  {formatCalendarDate(nextDate)}
+                  {nextDateTone === 'overdue' ? ' · overdue' : nextDateTone === 'today' ? ' · due today' : ''}
+                </dd>
+              </div>
+            )}
+            {supplier.expected_amount != null && (
+              <div>
+                <dt className="text-xs text-slate-400 dark:text-slate-500">Expected amount</dt>
+                <dd className="mt-0.5 text-sm text-slate-800 dark:text-slate-200">
+                  {formatCurrency(supplier.expected_amount, supplier.currency)}
+                </dd>
+              </div>
+            )}
+          </dl>
+          <Link to={recordHref} className="inline-block mt-3 text-xs font-medium text-indigo-600 dark:text-indigo-400 no-underline">
+            Record expense
+          </Link>
+        </div>
+      )}
 
       {hasCredentials && (
         <div className="p-4">

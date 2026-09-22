@@ -15,6 +15,14 @@ import {
   lineItemSchema,
   loginSchema,
   registerSchema,
+  supplierSchema,
+  employeeSchema,
+  payrollEmployerSettingsSchema,
+  employeeRecurringComponentSchema,
+  payRunSchema,
+  emp201Schema,
+  yearEndSchema,
+  emp501Schema,
 } from './schemas';
 
 describe('invoiceSchema', () => {
@@ -446,5 +454,144 @@ describe('registerSchema', () => {
   it('rejects password without number', () => {
     const result = registerSchema.safeParse({ ...valid, password: 'Password', confirm_password: 'Password' });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('supplierSchema', () => {
+  const valid = { name: 'Cloud.co.za' };
+
+  it('accepts a supplier without recurrence', () => {
+    expect(supplierSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it('requires next expected payment when repeating', () => {
+    const result = supplierSchema.safeParse({ ...valid, recurrence_interval: 'monthly' });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts a recurring supplier with a next expected payment date', () => {
+    const result = supplierSchema.safeParse({
+      ...valid,
+      recurrence_interval: 'monthly',
+      next_expected_payment_date: '2026-10-21',
+      expected_amount: 199,
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe('employeeSchema', () => {
+  const valid = {
+    first_name: 'Ada',
+    last_name: 'Molefe',
+    id_number: '9001015800085',
+    employment_type: 'permanent' as const,
+    start_date: '2026-03-01',
+    pay_frequency: 'monthly' as const,
+    status: 'active' as const,
+    uif_eligible: true,
+    paye_registered: true,
+    medical_aid_members: 1,
+  };
+
+  it('accepts an employee with a SA ID number', () => {
+    expect(employeeSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it('rejects a missing identity document', () => {
+    const result = employeeSchema.safeParse({ ...valid, id_number: '' });
+    expect(result.success).toBe(false);
+  });
+
+  it('requires an end date when terminated', () => {
+    const result = employeeSchema.safeParse({ ...valid, status: 'terminated' });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('payrollEmployerSettingsSchema', () => {
+  it('accepts employer SARS references', () => {
+    expect(
+      payrollEmployerSettingsSchema.safeParse({
+        paye_reference: '7123456789',
+        sdl_liable: true,
+        default_pay_day: 25,
+      }).success,
+    ).toBe(true);
+  });
+});
+
+describe('employeeRecurringComponentSchema', () => {
+  it('accepts a rand amount', () => {
+    expect(
+      employeeRecurringComponentSchema.safeParse({
+        component_type_id: 1,
+        calculation_method: 'amount',
+        amount: 20000,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects a percent without a value', () => {
+    expect(
+      employeeRecurringComponentSchema.safeParse({
+        component_type_id: 1,
+        calculation_method: 'percent_of_basic',
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('payRunSchema', () => {
+  it('accepts a monthly period', () => {
+    expect(
+      payRunSchema.safeParse({
+        period_start: '2026-09-01',
+        period_end: '2026-09-30',
+        pay_date: '2026-09-25',
+        pay_frequency: 'monthly',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects a reversed period', () => {
+    expect(
+      payRunSchema.safeParse({
+        period_start: '2026-10-01',
+        period_end: '2026-09-30',
+        pay_date: '2026-09-25',
+        pay_frequency: 'monthly',
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('emp201Schema', () => {
+  it('accepts a calendar month', () => {
+    expect(emp201Schema.safeParse({ period_year: 2026, period_month: 9 }).success).toBe(true);
+  });
+
+  it('rejects an invalid month', () => {
+    expect(emp201Schema.safeParse({ period_year: 2026, period_month: 13 }).success).toBe(false);
+  });
+});
+
+describe('yearEndSchema', () => {
+  it('accepts a tax year id', () => {
+    expect(yearEndSchema.safeParse({ tax_year_id: 1 }).success).toBe(true);
+  });
+
+  it('rejects a missing tax year', () => {
+    expect(yearEndSchema.safeParse({ tax_year_id: 0 }).success).toBe(false);
+  });
+});
+
+describe('emp501Schema', () => {
+  it('accepts a tax year and period', () => {
+    expect(emp501Schema.safeParse({ tax_year_id: 1, period_type: 'interim' }).success).toBe(true);
+  });
+
+  it('rejects an invalid period', () => {
+    expect(emp501Schema.safeParse({ tax_year_id: 1, period_type: 'monthly' }).success).toBe(false);
   });
 });

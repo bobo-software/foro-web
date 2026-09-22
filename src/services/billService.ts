@@ -1,5 +1,5 @@
 import { foroApiClient } from '../backend';
-import type { Bill, BillPayment, CreateBillPaymentDto } from '../types/purchase';
+import type { Bill, BillPayment, CreateBillPaymentDto, RecordExpenseDto, RecordExpenseResult } from '../types/purchase';
 
 const BILLS = '/api/v1/bills';
 const PAYMENTS = '/api/v1/bill-payments';
@@ -103,6 +103,32 @@ export class BillService {
       if ((err as { status?: number }).status === 404) return null;
       throw err;
     }
+  }
+
+  static async recordExpense(data: RecordExpenseDto): Promise<RecordExpenseResult> {
+    const response = await foroApiClient.post<{ bill: ApiBillRow; payment: ApiBillPaymentRow }>(
+      `${BILLS}/record-expense`,
+      {
+        businessId: data.business_id,
+        supplierId: data.supplier_id,
+        amount: data.amount,
+        date: data.date,
+        currency: data.currency,
+        paymentMethod: data.payment_method,
+        reference: data.reference,
+        notes: data.notes,
+        ...(data.recurrence_interval !== undefined && {
+          recurrenceInterval: data.recurrence_interval ?? '',
+        }),
+        ...(data.next_expected_payment_date !== undefined && {
+          nextExpectedPaymentDate: data.next_expected_payment_date,
+        }),
+      },
+    );
+    return {
+      bill: normalizeBill(response.data.bill),
+      payment: normalizePayment(response.data.payment),
+    };
   }
 }
 

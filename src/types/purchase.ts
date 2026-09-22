@@ -102,6 +102,24 @@ export interface CreateBillPaymentDto {
   payment_method?: string;
 }
 
+export interface RecordExpenseDto {
+  business_id: number;
+  supplier_id: number;
+  amount: number;
+  date: string;
+  currency?: string;
+  payment_method?: string;
+  reference?: string;
+  notes?: string;
+  recurrence_interval?: 'weekly' | 'monthly' | 'yearly' | null;
+  next_expected_payment_date?: string | null;
+}
+
+export interface RecordExpenseResult {
+  bill: Bill;
+  payment: BillPayment;
+}
+
 export interface PurchaseApprovalSetting {
   id?: number;
   business_id: number;

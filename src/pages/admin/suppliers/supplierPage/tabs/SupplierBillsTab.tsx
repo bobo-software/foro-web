@@ -9,14 +9,27 @@ const STATUS_CLASSES: Record<string, string> = {
   cancelled: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300',
 };
 
-export function SupplierBillsTab({ bills, loading }: SupplierTabProps) {
+export function SupplierBillsTab({ supplier, bills, loading }: SupplierTabProps) {
+  const recordHref =
+    supplier.id != null ? `/app/purchasing/bills/record-expense?supplierId=${supplier.id}` : '/app/purchasing/bills/record-expense';
+
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-4 space-y-3">
-      <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Bills</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Bills</h2>
+        <Link to={recordHref} className="text-xs font-medium text-indigo-600 dark:text-indigo-400 no-underline">
+          Record expense
+        </Link>
+      </div>
       {loading ? (
         <p className="text-sm text-slate-400 dark:text-slate-500">Loading…</p>
       ) : bills.length === 0 ? (
-        <p className="text-sm text-slate-400 dark:text-slate-500">No bills for this supplier yet.</p>
+        <p className="text-sm text-slate-400 dark:text-slate-500">
+          No bills for this supplier yet.{' '}
+          <Link to={recordHref} className="text-indigo-600 dark:text-indigo-400">
+            Record an expense
+          </Link>
+        </p>
       ) : (
         <table className="w-full text-sm">
           <thead>

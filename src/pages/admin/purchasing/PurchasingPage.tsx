@@ -4,7 +4,7 @@ import { LuFilePlus } from 'react-icons/lu';
 const TABS = [
   { label: 'Purchase orders', path: '/app/purchasing/orders', createPath: '/app/purchasing/orders/create', createLabel: '+ New PO' },
   { label: 'Suppliers', path: '/app/purchasing/suppliers', createPath: '/app/purchasing/suppliers/create', createLabel: '+ New supplier' },
-  { label: 'Bills', path: '/app/purchasing/bills' },
+  { label: 'Bills', path: '/app/purchasing/bills', createPath: '/app/purchasing/bills/record-expense', createLabel: '+ Record expense' },
 ] as const;
 
 export function PurchasingPage() {
