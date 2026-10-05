@@ -51,6 +51,8 @@ const PurchaseOrderFormPage = lazy(() => import('@pages/admin/purchasing/Purchas
 const PurchaseOrderDetailPage = lazy(() => import('@pages/admin/purchasing/PurchaseOrderDetailPage').then((m) => ({ default: m.PurchaseOrderDetailPage })));
 const BillsPage = lazy(() => import('@pages/admin/purchasing/BillsPage').then((m) => ({ default: m.BillsPage })));
 const RecordExpensePage = lazy(() => import('@pages/admin/purchasing/RecordExpensePage').then((m) => ({ default: m.RecordExpensePage })));
+const ExpensesPage = lazy(() => import('@pages/admin/purchasing/ExpensesPage').then((m) => ({ default: m.ExpensesPage })));
+const ExpenseFormPage = lazy(() => import('@pages/admin/purchasing/ExpenseFormPage').then((m) => ({ default: m.ExpenseFormPage })));
 const PayrollPage = lazy(() => import('@pages/admin/payroll/PayrollPage').then((m) => ({ default: m.PayrollPage })));
 const EmployeeListPage = lazy(() => import('@pages/admin/payroll/EmployeeListPage').then((m) => ({ default: m.EmployeeListPage })));
 const EmployeeFormPage = lazy(() => import('@pages/admin/payroll/EmployeeFormPage').then((m) => ({ default: m.EmployeeFormPage })));
@@ -250,11 +252,14 @@ function App() {
                 <Route path="orders" element={<PurchaseOrderListPage />} />
                 <Route path="suppliers" element={<SupplierListPage />} />
                 <Route path="bills" element={<BillsPage />} />
+                <Route path="expenses" element={<ExpensesPage />} />
               </Route>
               <Route path="purchasing/orders/create" element={<PurchaseOrderFormPage />} />
               <Route path="purchasing/orders/:id" element={<PurchaseOrderDetailPage />} />
               <Route path="purchasing/orders/:id/edit" element={<PurchaseOrderFormPage />} />
               <Route path="purchasing/bills/record-expense" element={<RecordExpensePage />} />
+              <Route path="purchasing/expenses/create" element={<ExpenseFormPage />} />
+              <Route path="purchasing/expenses/:id/edit" element={<ExpenseFormPage />} />
               <Route path="purchasing/suppliers/create" element={<SupplierFormPage />} />
               <Route path="purchasing/suppliers/:id" element={<SupplierDetailPage />} />
               <Route path="purchasing/suppliers/:id/edit" element={<SupplierFormPage />} />

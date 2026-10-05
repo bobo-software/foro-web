@@ -11,6 +11,7 @@ export { useContactStore } from './data/ContactStore';
 export { useProjectStore } from './data/ProjectStore';
 export { useDashboardStore } from './data/DashboardStore';
 export { useBillStore } from './data/BillStore';
+export { useExpenseStore } from './data/ExpenseStore';
 export { useEmployeeStore } from './data/EmployeeStore';
 export { usePayrollEmployerSettingsStore } from './data/PayrollEmployerSettingsStore';
 export { usePayrollComponentTypeStore } from './data/PayrollComponentTypeStore';

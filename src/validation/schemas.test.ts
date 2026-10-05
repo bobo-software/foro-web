@@ -6,6 +6,7 @@ import {
   itemSchema,
   itemFormWithBomSchema,
   paymentSchema,
+  expenseSchema,
   projectSchema,
   projectTaskCreateSchema,
   projectTaskUpdateSchema,
@@ -224,6 +225,27 @@ describe('paymentSchema', () => {
     for (const method of ['cash', 'eft', 'card', 'cheque', 'bank_transfer', 'other']) {
       expect(paymentSchema.safeParse({ ...valid, payment_method: method }).success).toBe(true);
     }
+  });
+});
+
+describe('expenseSchema', () => {
+  const valid = {
+    business_id: 1,
+    date: '2026-09-22',
+    amount: 85.5,
+    category: 'fuel' as const,
+  };
+
+  it('accepts a valid cash expense', () => {
+    expect(expenseSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it('rejects zero amount', () => {
+    expect(expenseSchema.safeParse({ ...valid, amount: 0 }).success).toBe(false);
+  });
+
+  it('rejects an unknown category', () => {
+    expect(expenseSchema.safeParse({ ...valid, category: 'petrol' }).success).toBe(false);
   });
 });
 

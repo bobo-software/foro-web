@@ -18,7 +18,7 @@ export function SupplierBillsTab({ supplier, bills, loading }: SupplierTabProps)
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Bills</h2>
         <Link to={recordHref} className="text-xs font-medium text-indigo-600 dark:text-indigo-400 no-underline">
-          Record expense
+          Record supplier bill
         </Link>
       </div>
       {loading ? (
@@ -27,7 +27,7 @@ export function SupplierBillsTab({ supplier, bills, loading }: SupplierTabProps)
         <p className="text-sm text-slate-400 dark:text-slate-500">
           No bills for this supplier yet.{' '}
           <Link to={recordHref} className="text-indigo-600 dark:text-indigo-400">
-            Record an expense
+            Record a supplier bill
           </Link>
         </p>
       ) : (

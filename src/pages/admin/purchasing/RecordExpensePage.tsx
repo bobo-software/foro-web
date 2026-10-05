@@ -126,10 +126,10 @@ export function RecordExpensePage() {
         recurrence_interval: repeats ? interval : null,
         next_expected_payment_date: repeats ? nextExpectedPaymentDate : null,
       });
-      toast.success('Expense recorded');
+      toast.success('Supplier bill recorded');
       navigate('/app/purchasing/bills');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to record expense');
+      toast.error(err instanceof Error ? err.message : 'Failed to record supplier bill');
     } finally {
       setSaving(false);
     }
@@ -141,7 +141,7 @@ export function RecordExpensePage() {
         <Link to="/app/purchasing/bills" className="text-sm text-indigo-600 dark:text-indigo-400 no-underline">
           ← Back
         </Link>
-        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Record expense</h1>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Record supplier bill</h1>
       </div>
       <p className="text-sm text-slate-600 dark:text-slate-400">
         Records a paid supplier bill for money that already left the bank (hosting, SaaS, fees). No purchase order.
@@ -194,10 +194,10 @@ export function RecordExpensePage() {
           rows={3}
         />
         <AppLabeledCheckbox
-          label="This expense repeats"
+          label="This bill repeats"
           checked={repeats}
           onChange={handleRepeatsChange}
-          helperText="Show this supplier as due on the next expected payment date. Record the expense when the money actually leaves the bank."
+          helperText="Show this supplier as due on the next expected payment date. Record the supplier bill when the money actually leaves the bank."
         />
         {repeats && (
           <>
@@ -224,7 +224,7 @@ export function RecordExpensePage() {
         disabled={saving}
         className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
       >
-        {saving ? 'Saving…' : 'Save expense'}
+        {saving ? 'Saving…' : 'Save supplier bill'}
       </button>
     </form>
   );

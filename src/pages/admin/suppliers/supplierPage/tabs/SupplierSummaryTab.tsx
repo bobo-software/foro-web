@@ -124,7 +124,7 @@ export function SupplierSummaryTab({ supplier, purchaseOrders, bills, loading }:
       {(intervalLabel || nextDate) && (
         <div className="p-4">
           <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
-            Recurring expense
+            Recurring bill
           </p>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
             {intervalLabel && (
@@ -160,7 +160,7 @@ export function SupplierSummaryTab({ supplier, purchaseOrders, bills, loading }:
             )}
           </dl>
           <Link to={recordHref} className="inline-block mt-3 text-xs font-medium text-indigo-600 dark:text-indigo-400 no-underline">
-            Record expense
+            Record supplier bill
           </Link>
         </div>
       )}

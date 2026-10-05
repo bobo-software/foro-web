@@ -215,7 +215,7 @@ export function BillsPage() {
               className="text-xs font-medium text-indigo-600 dark:text-indigo-400 no-underline"
               onClick={(e) => e.stopPropagation()}
             >
-              Record expense
+              Record supplier bill
             </Link>
           ) : null,
       },
@@ -247,7 +247,7 @@ export function BillsPage() {
         data={bills}
         getRowKey={(row) => String(row.id)}
         loading={loading}
-        emptyMessage="No supplier bills yet. Record an expense or receive a purchase order."
+        emptyMessage="No supplier bills yet. Record a supplier bill or receive a purchase order."
       />
 
       {paying && (

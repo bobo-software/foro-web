@@ -325,6 +325,22 @@ export const paymentSchema = z.object({
 
 export type PaymentInput = z.infer<typeof paymentSchema>;
 
+// ── Cash/card expense ──────────────────────────────────────────────
+export const expenseSchema = z.object({
+  business_id: z.number().int(),
+  date: dateString('Date'),
+  amount: z.number({ message: 'Amount is required' }).positive('Amount must be > 0'),
+  category: z.enum(['fuel', 'travel', 'office', 'meals', 'utilities', 'other'], {
+    message: 'Category is required',
+  }),
+  payee: z.string().max(255).optional(),
+  payment_method: z.enum(['cash', 'eft', 'card', 'cheque', 'bank_transfer', 'other']).optional(),
+  reference: z.string().optional(),
+  notes: z.string().max(2000).optional(),
+});
+
+export type ExpenseInput = z.infer<typeof expenseSchema>;
+
 // ── Project ────────────────────────────────────────────────────────
 export const projectSchema = z.object({
   business_id: z.number().int().positive().nullable().optional(),
