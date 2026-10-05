@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { AppPageHeader } from '@/components/ComponentsIndex';
 import AppInputLabeled from '@/components/forms/AppLabledInput';
 import { useCompanyStore } from '@/stores/data/CompanyStore';
 import { useSupplierStore } from '@/stores/data/SupplierStore';
@@ -98,30 +99,33 @@ export function PurchaseOrderDetailPage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center gap-3">
-        <Link to="/app/purchasing/orders" className="text-sm text-indigo-600 dark:text-indigo-400 no-underline">
-          ← Back
-        </Link>
-        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{po.po_number}</h1>
-        <span className="text-xs uppercase tracking-wide text-slate-500">{po.status}</span>
-        {po.approval_status && po.approval_status !== 'not_required' && (
-          <span
-            className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${APPROVAL_CLASSES[po.approval_status] ?? ''}`}
-          >
-            {po.approval_status === 'pending' ? 'Pending approval' : 'Approved'}
-          </span>
-        )}
-        {po.approval_status === 'pending' && (
-          <button
-            type="button"
-            disabled={approving}
-            onClick={() => void handleApprove()}
-            className="text-xs font-medium text-indigo-600 dark:text-indigo-400 disabled:opacity-50"
-          >
-            {approving ? 'Approving…' : 'Approve'}
-          </button>
-        )}
-      </div>
+      <AppPageHeader
+        title={po.po_number}
+        subtitle={`Purchase order · ${po.status}`}
+        showBackButton
+        onBackClick={() => navigate(-1)}
+        actions={
+          <>
+            {po.approval_status && po.approval_status !== 'not_required' && (
+              <span
+                className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${APPROVAL_CLASSES[po.approval_status] ?? ''}`}
+              >
+                {po.approval_status === 'pending' ? 'Pending approval' : 'Approved'}
+              </span>
+            )}
+            {po.approval_status === 'pending' && (
+              <button
+                type="button"
+                disabled={approving}
+                onClick={() => void handleApprove()}
+                className="text-xs font-medium text-indigo-600 dark:text-indigo-400 disabled:opacity-50"
+              >
+                {approving ? 'Approving…' : 'Approve'}
+              </button>
+            )}
+          </>
+        }
+      />
 
       <dl className="grid gap-3 sm:grid-cols-2 text-sm">
         <div>

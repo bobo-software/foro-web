@@ -8,6 +8,7 @@ import { useBusinessStore } from '@/stores/data/BusinessStore';
 import { useCompanyStore } from '@/stores/data/CompanyStore';
 import { useSupplierStore } from '@/stores/data/SupplierStore';
 import { useBillStore } from '@/stores/data/BillStore';
+import { BillPaymentService } from '@/services/billService';
 import type { Bill } from '@/types/purchase';
 import type { Supplier } from '@/types/supplier';
 import { formatCurrency } from '@/utils/currency';
@@ -39,6 +40,7 @@ export function BillsPage() {
   const [reference, setReference] = useState('');
   const [method, setMethod] = useState('eft');
   const [saving, setSaving] = useState(false);
+  const [referencesByBill, setReferencesByBill] = useState<Map<number, string[]>>(new Map());
 
   useEffect(() => {
     void fetchCompanies();
@@ -52,6 +54,31 @@ export function BillsPage() {
   useEffect(() => {
     if (error) toast.error(error);
   }, [error]);
+
+  // Payment references live on bill_payments; refetch when bills change (e.g. after recording a payment).
+  useEffect(() => {
+    if (businessId == null) return;
+    let cancelled = false;
+    BillPaymentService.findAll({ where: { business_id: businessId } })
+      .then((payments) => {
+        if (cancelled) return;
+        const map = new Map<number, string[]>();
+        for (const p of payments) {
+          const ref = p.reference?.trim();
+          if (!ref) continue;
+          const refs = map.get(p.bill_id) ?? [];
+          if (!refs.includes(ref)) refs.push(ref);
+          map.set(p.bill_id, refs);
+        }
+        setReferencesByBill(map);
+      })
+      .catch(() => {
+        if (!cancelled) setReferencesByBill(new Map());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [businessId, bills]);
 
   const companyNameById = useMemo(() => {
     const map = new Map<number, string>();
@@ -114,12 +141,23 @@ export function BillsPage() {
         render: (row) => row.bill_number,
       },
       {
+        id: 'date',
+        header: 'Date',
+        cellClassName: 'whitespace-nowrap',
+        render: (row) => (row.issue_date ? formatCalendarDate(row.issue_date) : '—'),
+      },
+      {
         id: 'supplier',
         header: 'Supplier',
         render: (row) =>
           (row.supplier_id != null ? supplierNameById.get(row.supplier_id) : undefined) ??
           (row.company_id != null ? companyNameById.get(row.company_id) : undefined) ??
           '—',
+      },
+      {
+        id: 'reference',
+        header: 'Reference',
+        render: (row) => (row.id != null ? referencesByBill.get(row.id)?.join(', ') : undefined) || '—',
       },
       {
         id: 'status',
@@ -154,7 +192,7 @@ export function BillsPage() {
           ),
       },
     ],
-    [companyNameById, supplierNameById],
+    [companyNameById, supplierNameById, referencesByBill],
   );
 
   const today = localDateISO();

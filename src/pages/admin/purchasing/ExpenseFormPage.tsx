@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { AppPageHeader } from '@/components/ComponentsIndex';
 import AppInputLabeled from '@/components/forms/AppLabledInput';
 import AppLabeledSelectInput from '@/components/forms/AppLabledSelectInput';
 import AppLabeledAreaInput from '@/components/forms/AppLabledAreaInput';
@@ -124,75 +125,71 @@ export function ExpenseFormPage() {
   }
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-6 max-w-lg">
-      <div className="flex items-center gap-3">
-        <Link to="/app/purchasing/expenses" className="text-sm text-indigo-600 dark:text-indigo-400 no-underline">
-          ← Back
-        </Link>
-        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-          {isEdit ? 'Edit expense' : 'Record expense'}
-        </h1>
-      </div>
-      <p className="text-sm text-slate-600 dark:text-slate-400">
-        Cash or card spend that already left the bank (petrol, parking, meals). No supplier.
-      </p>
+    <div className="space-y-3">
+      <AppPageHeader
+        title={isEdit ? 'Edit expense' : 'Record expense'}
+        subtitle="Cash or card spend that already left the bank (petrol, parking, meals). No supplier."
+        showBackButton
+        onBackClick={() => navigate(-1)}
+      />
+      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-6 max-w-lg">
+        <div className="grid gap-4">
+          <AppLabeledSelectInput
+            label="Category *"
+            value={category}
+            options={EXPENSE_CATEGORY_OPTIONS}
+            onChange={(e) => {
+              if (isCategory(e.target.value)) setCategory(e.target.value);
+            }}
+            required
+          />
+          <AppInputLabeled
+            label="Amount *"
+            type="number"
+            min={0.01}
+            step={0.01}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            required
+          />
+          <AppInputLabeled
+            label="Date *"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+          />
+          <AppInputLabeled
+            label="Payee"
+            value={payee}
+            onChange={(e) => setPayee(e.target.value)}
+            placeholder="e.g. Engen N1"
+          />
+          <AppLabeledSelectInput
+            label="Method"
+            value={method}
+            options={PAYMENT_METHODS}
+            onChange={(e) => setMethod(e.target.value)}
+          />
+          <AppInputLabeled label="Reference" value={reference} onChange={(e) => setReference(e.target.value)} />
+          <AppLabeledAreaInput
+            label="Notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="e.g. Job site trip — full tank"
+            rows={3}
+          />
+        </div>
 
-      <div className="grid gap-4">
-        <AppLabeledSelectInput
-          label="Category *"
-          value={category}
-          options={EXPENSE_CATEGORY_OPTIONS}
-          onChange={(e) => {
-            if (isCategory(e.target.value)) setCategory(e.target.value);
-          }}
-          required
-        />
-        <AppInputLabeled
-          label="Amount *"
-          type="number"
-          min={0.01}
-          step={0.01}
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          required
-        />
-        <AppInputLabeled
-          label="Date *"
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          required
-        />
-        <AppInputLabeled
-          label="Payee"
-          value={payee}
-          onChange={(e) => setPayee(e.target.value)}
-          placeholder="e.g. Engen N1"
-        />
-        <AppLabeledSelectInput
-          label="Method"
-          value={method}
-          options={PAYMENT_METHODS}
-          onChange={(e) => setMethod(e.target.value)}
-        />
-        <AppInputLabeled label="Reference" value={reference} onChange={(e) => setReference(e.target.value)} />
-        <AppLabeledAreaInput
-          label="Notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="e.g. Job site trip — full tank"
-          rows={3}
-        />
-      </div>
-
-      <button
-        type="submit"
-        disabled={saving}
-        className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
-      >
-        {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Save expense'}
-      </button>
-    </form>
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+        >
+          {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Save expense'}
+        </button>
+      </form>
+    </div>
   );
 }
 

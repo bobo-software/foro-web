@@ -15,6 +15,8 @@ interface AppPageHeaderProps {
   showBackButton?: boolean;
   onBackClick?: () => void;
   backButtonText?: string;
+  /** Extra content rendered on the right (badges, action buttons). */
+  actions?: React.ReactNode;
 }
 
 const AppPageHeader: React.FC<AppPageHeaderProps> = ({
@@ -29,7 +31,8 @@ const AppPageHeader: React.FC<AppPageHeaderProps> = ({
   buttonClassName = '',
   showBackButton = false,
   onBackClick,
-  backButtonText = 'Back'
+  backButtonText = 'Back',
+  actions,
 }) => {
   return (
     <div className="flex items-center justify-between px-4 py-2.5 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
@@ -66,14 +69,19 @@ const AppPageHeader: React.FC<AppPageHeaderProps> = ({
           )}
         </div>
       </div>
-      {showButton && (
-        <button
-          onClick={onButtonClick}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors shrink-0 ${buttonClassName}`}
-        >
-          {buttonIcon}
-          {buttonText}
-        </button>
+      {(actions || showButton) && (
+        <div className="flex items-center gap-2 shrink-0 ml-3">
+          {actions}
+          {showButton && (
+            <button
+              onClick={onButtonClick}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors shrink-0 ${buttonClassName}`}
+            >
+              {buttonIcon}
+              {buttonText}
+            </button>
+          )}
+        </div>
       )}
     </div>
   )
