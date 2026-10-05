@@ -21,6 +21,8 @@ export interface AppDataTableProps<T> {
   title?: string;
   /** Optional icon before the title (e.g. LuUsers, LuTrendingUp); ignored when `embedded` */
   titleIcon?: ReactNode;
+  /** Controls rendered in the card header after the title (search, filters); ignored when `embedded` */
+  toolbar?: ReactNode;
   columns: AppDataTableColumn<T>[];
   data: T[];
   getRowKey: (row: T, index: number) => string | number;
@@ -53,6 +55,7 @@ function alignClass(align: AppDataTableColumn<unknown>['align']): { th: string; 
 export function AppDataTable<T>({
   title = '',
   titleIcon,
+  toolbar,
   columns,
   data,
   getRowKey,
@@ -195,6 +198,7 @@ export function AppDataTable<T>({
           </span>
         )}
         {title ? <AppText variant="h2" className="text-sm" text={title} /> : null}
+        {toolbar != null && <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">{toolbar}</div>}
       </div>
       {body}
     </div>

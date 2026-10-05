@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LuFilter } from 'react-icons/lu';
 import { AppDataTable, type AppDataTableColumn } from '@/components/elements/AppDataTable';
+import { TableCount, TableFilterSelect, TableSearchInput, TableCreateButton, TableToolbarEnd, TableToolbarStart } from '@/components/elements/AppTableToolbar';
 import { useInvoiceStore } from '../../stores/data/InvoiceStore';
 import { useBusinessStore } from '../../stores/data/BusinessStore';
 import { useAutoRefresh, useProjectId } from '../../hooks';
@@ -129,49 +129,54 @@ export function InvoiceList({ documentKind }: InvoiceListProps) {
       ? ['all', 'draft', 'accepted', 'cancelled']
       : ['all', 'draft', 'sent', 'accepted', 'paid', 'overdue', 'cancelled'];
 
-  return (
-    <div className="space-y-2">
-      {/* Filters row */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-400"
-        >
-          {statusOptions.map((s) => (
-            <option key={s} value={s}>
-              {s === 'all' ? 'All statuses' : s.charAt(0).toUpperCase() + s.slice(1)}
-            </option>
-          ))}
-        </select>
-        <div className="relative ml-auto">
-          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
-            <LuFilter size={13} />
-          </span>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search…"
-            className="rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 py-1 pl-7 pr-2.5 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-44"
-            aria-label="Search invoices"
-          />
-        </div>
-      </div>
+  const noun = documentKind === 'credit_note' ? 'credit note' : documentKind === 'invoice' ? 'invoice' : 'document';
+  const createPath = documentKind === 'credit_note' ? '/app/invoices/create?credit_note=1' : '/app/invoices/create';
+  const createLabel = documentKind === 'credit_note' ? 'New credit note' : 'New invoice';
 
-      <AppDataTable<Invoice>
-        columns={columns}
-        data={filteredInvoices}
-        getRowKey={(row, i) => row.id ?? `inv-${i}`}
-        getRowClassName={invoiceTableRowClassName}
-        onRowClick={(row) => { if (row.id != null) navigate(`/app/invoices/${row.id}`); }}
-        loading={loading}
-        error={error}
-        emptyMessage={documentKind === 'credit_note' ? 'No credit notes found.' : 'No invoices found.'}
-        pageSize={20}
-        pageSizeOptions={[10, 20, 50]}
-      />
-    </div>
+  const toolbar = (
+    <>
+      <TableToolbarStart>
+        <TableSearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search number, company…"
+          ariaLabel="Search documents"
+        />
+        <TableFilterSelect
+          value={filterStatus}
+          onChange={setFilterStatus}
+          options={statusOptions.map((s) => ({
+            value: s,
+            label: s === 'all' ? 'All statuses' : s.charAt(0).toUpperCase() + s.slice(1),
+          }))}
+          ariaLabel="Filter by status"
+        />
+      </TableToolbarStart>
+      <TableToolbarEnd>
+        <TableCount count={filteredInvoices.length} noun={noun} loading={loading} />
+        <TableCreateButton to={createPath} label={createLabel} />
+      </TableToolbarEnd>
+    </>
+  );
+
+  return (
+    <AppDataTable<Invoice>
+      toolbar={toolbar}
+      columns={columns}
+      data={filteredInvoices}
+      getRowKey={(row, i) => row.id ?? `inv-${i}`}
+      getRowClassName={invoiceTableRowClassName}
+      onRowClick={(row) => { if (row.id != null) navigate(`/app/invoices/${row.id}`); }}
+      loading={loading}
+      error={error}
+      emptyMessage={
+        search.trim() || filterStatus !== 'all'
+          ? 'No documents match your filters.'
+          : documentKind === 'credit_note' ? 'No credit notes found.' : 'No invoices found.'
+      }
+      pageSize={20}
+      pageSizeOptions={[10, 20, 50]}
+    />
   );
 }
 

@@ -2,9 +2,10 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { LuFilePlus } from 'react-icons/lu';
 
 const TABS = [
-  { label: 'Invoices', path: '/app/documents/invoices', createPath: '/app/invoices/create', createLabel: '+ New Invoice' },
+  // Invoices and credit notes put their create action in the table toolbar.
+  { label: 'Invoices', path: '/app/documents/invoices' },
   { label: 'Quotations', path: '/app/documents/quotations', createPath: '/app/quotations/create', createLabel: '+ New Quotation' },
-  { label: 'Credit Notes', path: '/app/documents/credit-notes', createPath: '/app/invoices/create?credit_note=1', createLabel: '+ New Credit Note' },
+  { label: 'Credit Notes', path: '/app/documents/credit-notes' },
   { label: 'Trash', path: '/app/documents/trash' },
 ] as const;
 

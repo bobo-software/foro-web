@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { AppDataTable, type AppDataTableColumn } from '@/components/elements/AppDataTable';
+import { TableCount, TableFilterSelect, TableSearchInput, TableCreateButton, TableToolbarEnd, TableToolbarStart, matchesSearch } from '@/components/elements/AppTableToolbar';
 import AppInputLabeled from '@/components/forms/AppLabledInput';
 import AppLabeledSelectInput from '@/components/forms/AppLabledSelectInput';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
@@ -23,6 +24,14 @@ const STATUS_CLASSES: Record<string, string> = {
   cancelled: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
 };
 
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all', label: 'All statuses' },
+  { value: 'unpaid', label: 'Unpaid' },
+  { value: 'partially_paid', label: 'Partially paid' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
 export function BillsPage() {
   const businessId = useBusinessStore((s) => s.currentBusiness?.id);
   const companies = useCompanyStore((s) => s.companies);
@@ -40,6 +49,8 @@ export function BillsPage() {
   const [reference, setReference] = useState('');
   const [method, setMethod] = useState('eft');
   const [saving, setSaving] = useState(false);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [search, setSearch] = useState('');
   const [referencesByBill, setReferencesByBill] = useState<Map<number, string[]>>(new Map());
 
   useEffect(() => {
@@ -95,6 +106,22 @@ export function BillsPage() {
     }
     return map;
   }, [suppliers]);
+
+  const filteredBills = useMemo(
+    () =>
+      bills.filter(
+        (bill) =>
+          (filterStatus === 'all' || bill.status === filterStatus) &&
+          matchesSearch(search, [
+            bill.bill_number,
+            bill.supplier_id != null ? supplierNameById.get(bill.supplier_id) : undefined,
+            bill.company_id != null ? companyNameById.get(bill.company_id) : undefined,
+            bill.notes,
+            ...(bill.id != null ? (referencesByBill.get(bill.id) ?? []) : []),
+          ]),
+      ),
+    [bills, filterStatus, search, supplierNameById, companyNameById, referencesByBill],
+  );
 
   const openPay = (bill: Bill) => {
     setPaying(bill);
@@ -281,11 +308,39 @@ export function BillsPage() {
       )}
 
       <AppDataTable
+        toolbar={
+          <>
+            <TableToolbarStart>
+              <TableSearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Search bill #, supplier, reference…"
+                ariaLabel="Search bills"
+              />
+              <TableFilterSelect
+                value={filterStatus}
+                onChange={setFilterStatus}
+                options={STATUS_FILTER_OPTIONS}
+                ariaLabel="Filter by status"
+              />
+            </TableToolbarStart>
+            <TableToolbarEnd>
+              <TableCount count={filteredBills.length} noun="bill" loading={loading} />
+              <TableCreateButton to="/app/purchasing/bills/record-expense" label="Record supplier bill" />
+            </TableToolbarEnd>
+          </>
+        }
         columns={columns}
-        data={bills}
+        data={filteredBills}
         getRowKey={(row) => String(row.id)}
         loading={loading}
-        emptyMessage="No supplier bills yet. Record a supplier bill or receive a purchase order."
+        emptyMessage={
+          search.trim() || filterStatus !== 'all'
+            ? 'No bills match your filters.'
+            : 'No supplier bills yet. Record a supplier bill or receive a purchase order.'
+        }
+        pageSize={20}
+        pageSizeOptions={[10, 20, 50]}
       />
 
       {paying && (

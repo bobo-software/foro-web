@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LuReceipt } from 'react-icons/lu';
 import { AppDataTable, type AppDataTableColumn } from '@/components/elements/AppDataTable';
-import AppLabeledSelectInput from '@/components/forms/AppLabledSelectInput';
+import { TableCount, TableFilterSelect, TableSearchInput, TableCreateButton, TableToolbarEnd, TableToolbarStart, matchesSearch } from '@/components/elements/AppTableToolbar';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
 import { useExpenseStore } from '@/stores/data/ExpenseStore';
 import type { Expense } from '@/types/expense';
@@ -21,6 +20,7 @@ export function ExpensesPage() {
   const error = useExpenseStore((s) => s.error);
   const fetchExpenses = useExpenseStore((s) => s.fetchExpenses);
   const [category, setCategory] = useState('all');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     void fetchExpenses(category);
@@ -71,30 +71,55 @@ export function ExpensesPage() {
     [],
   );
 
+  const filteredExpenses = useMemo(
+    () =>
+      expenses.filter((row) =>
+        matchesSearch(search, [
+          row.payee,
+          row.notes,
+          row.reference,
+          EXPENSE_CATEGORY_OPTIONS.find((option) => option.value === row.category)?.label,
+        ]),
+      ),
+    [expenses, search],
+  );
+
   return (
-    <div className="space-y-4">
-      <div className="max-w-xs">
-        <AppLabeledSelectInput
-          label="Category"
-          value={category}
-          options={CATEGORY_FILTER_OPTIONS}
-          onChange={(e) => setCategory(e.target.value || 'all')}
-        />
-      </div>
-      <AppDataTable<Expense>
-        title="Expenses"
-        titleIcon={<LuReceipt />}
-        columns={columns}
-        data={expenses}
-        getRowKey={(row, index) => row.id ?? `expense-${index}`}
-        loading={loading}
-        error={error}
-        emptyMessage="No cash expenses yet."
-        onRowClick={(row) => {
-          if (row.id != null) navigate(`/app/purchasing/expenses/${row.id}/edit`);
-        }}
-      />
-    </div>
+    <AppDataTable<Expense>
+      toolbar={
+        <>
+          <TableToolbarStart>
+            <TableSearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search payee, notes, reference…"
+              ariaLabel="Search expenses"
+            />
+            <TableFilterSelect
+              value={category}
+              onChange={(value) => setCategory(value || 'all')}
+              options={CATEGORY_FILTER_OPTIONS}
+              ariaLabel="Filter by category"
+            />
+          </TableToolbarStart>
+          <TableToolbarEnd>
+            <TableCount count={filteredExpenses.length} noun="expense" loading={loading} />
+            <TableCreateButton to="/app/purchasing/expenses/create" label="Record expense" />
+          </TableToolbarEnd>
+        </>
+      }
+      columns={columns}
+      data={filteredExpenses}
+      getRowKey={(row, index) => row.id ?? `expense-${index}`}
+      loading={loading}
+      error={error}
+      emptyMessage={search.trim() || category !== 'all' ? 'No expenses match your filters.' : 'No cash expenses yet.'}
+      onRowClick={(row) => {
+        if (row.id != null) navigate(`/app/purchasing/expenses/${row.id}/edit`);
+      }}
+      pageSize={20}
+      pageSizeOptions={[10, 20, 50]}
+    />
   );
 }
 
