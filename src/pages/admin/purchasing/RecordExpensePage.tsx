@@ -232,7 +232,7 @@ export function RecordExpensePage() {
         showBackButton
         onBackClick={() => navigate(-1)}
       />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,32rem)_minmax(0,1fr)] lg:items-start">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,32rem)_minmax(0,24rem)] lg:justify-between lg:gap-12">
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-6">
           <div className="grid gap-4">
             <AppLabledAutocomplete
@@ -330,48 +330,51 @@ export function RecordExpensePage() {
           </div>
         </form>
 
-        <section className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
-          <header className="border-b border-slate-200 dark:border-slate-700 px-4 py-2.5">
-            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-              {selectedSupplier ? `Recent payments to ${selectedSupplier.name}` : 'Recent payments'}
-            </h2>
-          </header>
-          {!selectedSupplier ? (
-            <p className="px-4 py-6 text-xs text-slate-500 dark:text-slate-400">Choose a supplier to see their recent payments.</p>
-          ) : recentLoading ? (
-            <p className="px-4 py-6 text-xs text-slate-500 dark:text-slate-400">Loading…</p>
-          ) : recentPayments.length === 0 ? (
-            <p className="px-4 py-6 text-xs text-slate-500 dark:text-slate-400">No payments recorded for this supplier yet.</p>
-          ) : (
-            <ul className="divide-y divide-slate-200 dark:divide-slate-700">
-              {recentPayments.map((payment) => (
-                <li key={payment.id} className="flex items-start justify-between gap-3 px-4 py-2.5">
-                  <div className="min-w-0 space-y-0.5">
-                    <div className="flex items-baseline gap-2 text-sm">
-                      <span className="font-medium text-slate-800 dark:text-slate-100">
-                        {formatCurrency(payment.amount, payment.currency)}
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">{formatCalendarDate(payment.date)}</span>
+        {/* On lg the grid cell stretches to the form's height; the card fills it and the list scrolls. */}
+        <div className="relative">
+          <section className="flex max-h-96 flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm lg:absolute lg:inset-0 lg:max-h-none">
+            <header className="shrink-0 border-b border-slate-200 dark:border-slate-700 px-4 py-2.5">
+              <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                {selectedSupplier ? `Recent payments to ${selectedSupplier.name}` : 'Recent payments'}
+              </h2>
+            </header>
+            {!selectedSupplier ? (
+              <p className="px-4 py-6 text-xs text-slate-500 dark:text-slate-400">Choose a supplier to see their recent payments.</p>
+            ) : recentLoading ? (
+              <p className="px-4 py-6 text-xs text-slate-500 dark:text-slate-400">Loading…</p>
+            ) : recentPayments.length === 0 ? (
+              <p className="px-4 py-6 text-xs text-slate-500 dark:text-slate-400">No payments recorded for this supplier yet.</p>
+            ) : (
+              <ul className="min-h-0 flex-1 divide-y divide-slate-200 overflow-y-auto dark:divide-slate-700">
+                {recentPayments.map((payment) => (
+                  <li key={payment.id} className="flex items-start justify-between gap-3 px-4 py-2.5">
+                    <div className="min-w-0 space-y-0.5">
+                      <div className="flex items-baseline gap-2 text-sm">
+                        <span className="font-medium text-slate-800 dark:text-slate-100">
+                          {formatCurrency(payment.amount, payment.currency)}
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">{formatCalendarDate(payment.date)}</span>
+                      </div>
+                      <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                        {[methodLabel(payment.method), payment.reference, payment.billNumber].filter(Boolean).join(' · ')}
+                      </p>
+                      {payment.notes && (
+                        <p className="truncate text-xs text-slate-400 dark:text-slate-500">{payment.notes}</p>
+                      )}
                     </div>
-                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                      {[methodLabel(payment.method), payment.reference, payment.billNumber].filter(Boolean).join(' · ')}
-                    </p>
-                    {payment.notes && (
-                      <p className="truncate text-xs text-slate-400 dark:text-slate-500">{payment.notes}</p>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => importPayment(payment)}
-                    className="shrink-0 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
-                  >
-                    Import details
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                    <button
+                      type="button"
+                      onClick={() => importPayment(payment)}
+                      className="shrink-0 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                    >
+                      Import details
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
       </div>
     </div>
   );
