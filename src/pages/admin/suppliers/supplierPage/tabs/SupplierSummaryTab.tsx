@@ -15,15 +15,36 @@ export function SupplierSummaryTab({ supplier, purchaseOrders, bills, loading }:
     return byCurrency;
   }, [purchaseOrders]);
 
+  const outstandingBills = useMemo(
+    () => bills.filter((bill) => bill.status !== 'paid' && bill.status !== 'cancelled'),
+    [bills],
+  );
+
+  const paidBills = useMemo(
+    () =>
+      bills
+        .filter((bill) => bill.status === 'paid')
+        .sort((a, b) => (b.issue_date || '').localeCompare(a.issue_date || '')),
+    [bills],
+  );
+
   const unpaidByCurrency = useMemo(() => {
     const byCurrency: Record<string, number> = {};
-    for (const bill of bills) {
-      if (bill.status === 'paid' || bill.status === 'cancelled') continue;
+    for (const bill of outstandingBills) {
       const c = bill.currency || 'ZAR';
       byCurrency[c] = (byCurrency[c] ?? 0) + Number(bill.total ?? 0);
     }
     return byCurrency;
-  }, [bills]);
+  }, [outstandingBills]);
+
+  const paidByCurrency = useMemo(() => {
+    const byCurrency: Record<string, number> = {};
+    for (const bill of paidBills) {
+      const c = bill.currency || 'ZAR';
+      byCurrency[c] = (byCurrency[c] ?? 0) + Number(bill.total ?? 0);
+    }
+    return byCurrency;
+  }, [paidBills]);
 
   const lastOrderDate = useMemo(() => {
     const dates = purchaseOrders.map((po) => po.issue_date).filter(Boolean).sort();
@@ -85,7 +106,7 @@ export function SupplierSummaryTab({ supplier, purchaseOrders, bills, loading }:
         {loading ? (
           <p className="text-xs text-slate-400 dark:text-slate-500">Loading…</p>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="p-3 rounded-lg bg-amber-50/60 dark:bg-amber-900/10 border border-amber-200/60 dark:border-amber-800/40">
               <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-1">Total ordered</p>
               {Object.keys(spendByCurrency).length === 0 ? (
@@ -102,6 +123,21 @@ export function SupplierSummaryTab({ supplier, purchaseOrders, bills, loading }:
                 {lastOrderDate && <span className="block">Last order {new Date(lastOrderDate).toLocaleDateString()}</span>}
               </p>
             </div>
+            <div className="p-3 rounded-lg bg-emerald-50/60 dark:bg-emerald-900/10 border border-emerald-200/60 dark:border-emerald-800/40">
+              <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 mb-1">Paid bills</p>
+              {Object.keys(paidByCurrency).length === 0 ? (
+                <span className="text-sm text-slate-400">—</span>
+              ) : (
+                Object.entries(paidByCurrency).map(([curr, tot]) => (
+                  <p key={curr} className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+                    {formatCurrency(tot, curr)}
+                  </p>
+                ))
+              )}
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                {paidBills.length} paid bill{paidBills.length !== 1 ? 's' : ''}
+              </p>
+            </div>
             <div className="p-3 rounded-lg bg-red-50/60 dark:bg-red-900/10 border border-red-200/60 dark:border-red-800/40">
               <p className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">Outstanding bills</p>
               {Object.keys(unpaidByCurrency).length === 0 ? (
@@ -114,7 +150,7 @@ export function SupplierSummaryTab({ supplier, purchaseOrders, bills, loading }:
                 ))
               )}
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                {bills.length} bill{bills.length !== 1 ? 's' : ''}
+                {outstandingBills.length} outstanding bill{outstandingBills.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>

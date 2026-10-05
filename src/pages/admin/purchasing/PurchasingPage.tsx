@@ -2,6 +2,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 
 // Each tab's create action lives in its table toolbar.
 const TABS = [
+  { label: 'Summary', path: '/app/purchasing/summary' },
   { label: 'Purchase orders', path: '/app/purchasing/orders' },
   { label: 'Suppliers', path: '/app/purchasing/suppliers' },
   { label: 'Bills', path: '/app/purchasing/bills' },

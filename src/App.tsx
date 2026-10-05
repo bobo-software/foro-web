@@ -46,6 +46,7 @@ const InvoiceList = lazy(() => import('@/components/elements/InvoiceList').then(
 const QuotationList = lazy(() => import('@/components/elements/QuotationList').then((m) => ({ default: m.QuotationList })));
 const DocumentsTrashPage = lazy(() => import('@pages/admin/DocumentsTrashPage').then((m) => ({ default: m.DocumentsTrashPage })));
 const PurchasingPage = lazy(() => import('@pages/admin/purchasing/PurchasingPage').then((m) => ({ default: m.PurchasingPage })));
+const PaymentsSummaryPage = lazy(() => import('@pages/admin/purchasing/PaymentsSummaryPage').then((m) => ({ default: m.PaymentsSummaryPage })));
 const PurchaseOrderListPage = lazy(() => import('@pages/admin/purchasing/PurchaseOrderListPage').then((m) => ({ default: m.PurchaseOrderListPage })));
 const PurchaseOrderFormPage = lazy(() => import('@pages/admin/purchasing/PurchaseOrderFormPage').then((m) => ({ default: m.PurchaseOrderFormPage })));
 const PurchaseOrderDetailPage = lazy(() => import('@pages/admin/purchasing/PurchaseOrderDetailPage').then((m) => ({ default: m.PurchaseOrderDetailPage })));
@@ -248,7 +249,8 @@ function App() {
                 <Route path="trash" element={<DocumentsTrashPage />} />
               </Route>
               <Route path="purchasing" element={<PurchasingPage />}>
-                <Route index element={<Navigate to="orders" replace />} />
+                <Route index element={<Navigate to="summary" replace />} />
+                <Route path="summary" element={<PaymentsSummaryPage />} />
                 <Route path="orders" element={<PurchaseOrderListPage />} />
                 <Route path="suppliers" element={<SupplierListPage />} />
                 <Route path="bills" element={<BillsPage />} />
