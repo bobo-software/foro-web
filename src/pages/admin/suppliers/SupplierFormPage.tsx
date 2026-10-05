@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { AppPageHeader } from '@/components/ComponentsIndex';
 import AppInputLabeled from '@/components/forms/AppLabledInput';
 import AppLabledAutocomplete from '@/components/forms/AppLabledAutocomplete';
 import AppLabeledPhoneInput from '@/components/forms/AppLabeledPhoneInput';
@@ -225,20 +226,15 @@ export function SupplierFormPage() {
 
   return (
     <div className="flex min-h-0 flex-col">
-      <div className="flex shrink-0 items-center gap-3">
-        <Link
-          to={isEditMode ? `/app/purchasing/suppliers/${id}` : '/app/purchasing/suppliers'}
-          className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 no-underline"
-        >
-          ← {isEditMode ? 'Back to supplier' : 'Back to suppliers'}
-        </Link>
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-          {isEditMode ? 'Edit supplier' : 'Add supplier'}
-        </h1>
-      </div>
+      <AppPageHeader
+        title={isEditMode ? 'Edit supplier' : 'Add supplier'}
+        subtitle={isEditMode ? 'Update supplier details' : 'Create a new supplier'}
+        showBackButton
+        onBackClick={() => navigate(-1)}
+      />
       <form
         onSubmit={handleSubmit}
-        className="mt-6 flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm lg:p-8"
+        className="mt-3 flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm lg:p-8"
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">

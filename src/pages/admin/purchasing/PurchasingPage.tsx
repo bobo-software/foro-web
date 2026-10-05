@@ -18,7 +18,7 @@ export function PurchasingPage() {
     <div className="space-y-2">
       <div className="flex items-center gap-3">
         <h1 className="flex-1 text-sm font-semibold text-slate-800 dark:text-slate-100 leading-none">
-          Purchasing
+          Payments
         </h1>
         {createPath && createLabel && (
           <Link

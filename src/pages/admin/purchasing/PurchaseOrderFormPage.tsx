@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { AppPageHeader } from '@/components/ComponentsIndex';
 import AppInputLabeled from '@/components/forms/AppLabledInput';
 import AppLabeledSelectInput from '@/components/forms/AppLabledSelectInput';
 import AppLabeledAreaInput from '@/components/forms/AppLabledAreaInput';
@@ -223,202 +224,202 @@ export function PurchaseOrderFormPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
-      <div className="flex items-center gap-3">
-        <Link to="/app/purchasing/orders" className="text-sm text-indigo-600 dark:text-indigo-400 no-underline">
-          ← Back
-        </Link>
-        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-          {isEdit ? 'Edit purchase order' : 'New purchase order'}
-        </h1>
-        {poNumber && (
-          <span className="font-mono text-sm text-slate-500 dark:text-slate-400">{poNumber}</span>
-        )}
-        {approvalStatus !== 'not_required' && (
-          <span
-            className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${APPROVAL_CLASSES[approvalStatus]}`}
-          >
-            {APPROVAL_LABELS[approvalStatus]}
-          </span>
-        )}
-        {approvalStatus === 'pending' && poId && (
+    <div className="space-y-3">
+      <AppPageHeader
+        title={isEdit ? 'Edit purchase order' : 'New purchase order'}
+        subtitle={poNumber || 'Purchase order'}
+        showBackButton
+        onBackClick={() => navigate(-1)}
+        actions={
+          <>
+            {approvalStatus !== 'not_required' && (
+              <span
+                className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${APPROVAL_CLASSES[approvalStatus]}`}
+              >
+                {APPROVAL_LABELS[approvalStatus]}
+              </span>
+            )}
+            {approvalStatus === 'pending' && poId && (
+              <button
+                type="button"
+                disabled={approving}
+                onClick={() => void handleApprove()}
+                className="text-xs font-medium text-indigo-600 dark:text-indigo-400 disabled:opacity-50"
+              >
+                {approving ? 'Approving…' : 'Approve'}
+              </button>
+            )}
+          </>
+        }
+      />
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <AppLabledAutocomplete
+            label="Supplier *"
+            options={suppliers}
+            value={selectedSupplier?.id != null ? String(selectedSupplier.id) : ''}
+            displayValue={selectedSupplier?.name ?? ''}
+            accessor="name"
+            valueAccessor="id"
+            onSelect={(supplier) => setSelectedSupplier(supplier as Supplier)}
+            onClear={() => setSelectedSupplier(null)}
+            required
+            placeholder="Search supplier…"
+          />
+          <AppInputLabeled
+            label="Quote reference"
+            value={quoteReference}
+            onChange={(e) => setQuoteReference(e.target.value)}
+            placeholder="Supplier's quote number"
+          />
+          <AppLabeledSelectInput
+            label="Status"
+            value={status}
+            options={[
+              { value: 'draft', label: 'Draft' },
+              { value: 'sent', label: 'Sent' },
+              { value: 'cancelled', label: 'Cancelled' },
+            ]}
+            onChange={(e) => setStatus(e.target.value as PurchaseOrderStatus)}
+          />
+          <AppInputLabeled label="Issue date" type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} required />
+          <AppInputLabeled
+            label="Expected delivery"
+            type="date"
+            value={expectedDeliveryDate}
+            onChange={(e) => setExpectedDeliveryDate(e.target.value)}
+          />
+          <AppInputLabeled
+            label="Tax %"
+            type="number"
+            value={taxRate}
+            onChange={(e) => setTaxRate(e.target.value)}
+            onFocus={() => {
+              if (Number(taxRate) === 0) setTaxRate('15');
+            }}
+            min={0}
+            step={0.01}
+          />
+        </div>
+
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Lines</h2>
+          {lines.map((line) => (
+            <div key={line.key} className="grid gap-2 sm:grid-cols-12 items-end">
+              <div className="sm:col-span-4">
+                <AppLabledAutocomplete
+                  label="Supplier item"
+                  options={supplierItems}
+                  value={line.supplier_item_id != null ? String(line.supplier_item_id) : ''}
+                  displayValue={line.supplier_item_id != null ? line.description : ''}
+                  accessor="name"
+                  valueAccessor="id"
+                  onSelect={(item) => {
+                    const si = item as SupplierItem;
+                    updateLine(line.key, {
+                      supplier_item_id: si.id,
+                      item_id: undefined,
+                      description: si.name,
+                      unit_cost: si.cost_price,
+                    });
+                  }}
+                  onClear={() => updateLine(line.key, { supplier_item_id: undefined })}
+                  placeholder={selectedSupplier ? "Supplier's catalog…" : 'Choose a supplier first'}
+                  disabled={!selectedSupplier}
+                />
+              </div>
+              <div className="sm:col-span-3">
+                <AppLabledAutocomplete
+                  label="Stock item"
+                  options={items}
+                  value={line.item_id != null ? String(line.item_id) : ''}
+                  displayValue={line.item_id != null ? line.description : ''}
+                  accessor="name"
+                  valueAccessor="id"
+                  onSelect={(item) => {
+                    const stock = item as Item;
+                    updateLine(line.key, {
+                      item_id: stock.id,
+                      supplier_item_id: undefined,
+                      description: stock.name,
+                      unit_cost: stock.cost_price ?? stock.unit_price ?? 0,
+                    });
+                  }}
+                  onClear={() => updateLine(line.key, { item_id: undefined })}
+                  placeholder="Optional catalog item…"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <AppInputLabeled
+                  label="Description *"
+                  value={line.description}
+                  onChange={(e) => updateLine(line.key, { description: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="sm:col-span-1">
+                <AppInputLabeled
+                  label="Qty"
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={String(line.quantity)}
+                  onChange={(e) => updateLine(line.key, { quantity: Number(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="sm:col-span-1">
+                <AppInputLabeled
+                  label="Unit cost"
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={String(line.unit_cost)}
+                  onChange={(e) => updateLine(line.key, { unit_cost: Number(e.target.value) || 0 })}
+                />
+              </div>
+              <button
+                type="button"
+                className="sm:col-span-1 text-xs text-slate-500 hover:text-red-600"
+                onClick={() => setLines((prev) => (prev.length === 1 ? prev : prev.filter((l) => l.key !== line.key)))}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
           <button
             type="button"
-            disabled={approving}
-            onClick={() => void handleApprove()}
-            className="text-xs font-medium text-indigo-600 dark:text-indigo-400 disabled:opacity-50"
+            className="text-sm text-indigo-600 dark:text-indigo-400"
+            onClick={() =>
+              setLines((prev) => [...prev, { key: String(Date.now()), description: '', quantity: 1, unit_cost: 0 }])
+            }
           >
-            {approving ? 'Approving…' : 'Approve'}
+            + Add line
           </button>
-        )}
-      </div>
+        </section>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <AppLabledAutocomplete
-          label="Supplier *"
-          options={suppliers}
-          value={selectedSupplier?.id != null ? String(selectedSupplier.id) : ''}
-          displayValue={selectedSupplier?.name ?? ''}
-          accessor="name"
-          valueAccessor="id"
-          onSelect={(supplier) => setSelectedSupplier(supplier as Supplier)}
-          onClear={() => setSelectedSupplier(null)}
-          required
-          placeholder="Search supplier…"
-        />
-        <AppInputLabeled
-          label="Quote reference"
-          value={quoteReference}
-          onChange={(e) => setQuoteReference(e.target.value)}
-          placeholder="Supplier's quote number"
-        />
-        <AppLabeledSelectInput
-          label="Status"
-          value={status}
-          options={[
-            { value: 'draft', label: 'Draft' },
-            { value: 'sent', label: 'Sent' },
-            { value: 'cancelled', label: 'Cancelled' },
-          ]}
-          onChange={(e) => setStatus(e.target.value as PurchaseOrderStatus)}
-        />
-        <AppInputLabeled label="Issue date" type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} required />
-        <AppInputLabeled
-          label="Expected delivery"
-          type="date"
-          value={expectedDeliveryDate}
-          onChange={(e) => setExpectedDeliveryDate(e.target.value)}
-        />
-        <AppInputLabeled
-          label="Tax %"
-          type="number"
-          value={taxRate}
-          onChange={(e) => setTaxRate(e.target.value)}
-          onFocus={() => {
-            if (Number(taxRate) === 0) setTaxRate('15');
-          }}
-          min={0}
-          step={0.01}
-        />
-      </div>
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          Subtotal {subtotal.toFixed(2)} · Tax {taxAmount.toFixed(2)} · <strong>Total {total.toFixed(2)} ZAR</strong>
+        </p>
+        <AppLabeledAreaInput label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Lines</h2>
-        {lines.map((line) => (
-          <div key={line.key} className="grid gap-2 sm:grid-cols-12 items-end">
-            <div className="sm:col-span-4">
-              <AppLabledAutocomplete
-                label="Supplier item"
-                options={supplierItems}
-                value={line.supplier_item_id != null ? String(line.supplier_item_id) : ''}
-                displayValue={line.supplier_item_id != null ? line.description : ''}
-                accessor="name"
-                valueAccessor="id"
-                onSelect={(item) => {
-                  const si = item as SupplierItem;
-                  updateLine(line.key, {
-                    supplier_item_id: si.id,
-                    item_id: undefined,
-                    description: si.name,
-                    unit_cost: si.cost_price,
-                  });
-                }}
-                onClear={() => updateLine(line.key, { supplier_item_id: undefined })}
-                placeholder={selectedSupplier ? "Supplier's catalog…" : 'Choose a supplier first'}
-                disabled={!selectedSupplier}
-              />
-            </div>
-            <div className="sm:col-span-3">
-              <AppLabledAutocomplete
-                label="Stock item"
-                options={items}
-                value={line.item_id != null ? String(line.item_id) : ''}
-                displayValue={line.item_id != null ? line.description : ''}
-                accessor="name"
-                valueAccessor="id"
-                onSelect={(item) => {
-                  const stock = item as Item;
-                  updateLine(line.key, {
-                    item_id: stock.id,
-                    supplier_item_id: undefined,
-                    description: stock.name,
-                    unit_cost: stock.cost_price ?? stock.unit_price ?? 0,
-                  });
-                }}
-                onClear={() => updateLine(line.key, { item_id: undefined })}
-                placeholder="Optional catalog item…"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <AppInputLabeled
-                label="Description *"
-                value={line.description}
-                onChange={(e) => updateLine(line.key, { description: e.target.value })}
-                required
-              />
-            </div>
-            <div className="sm:col-span-1">
-              <AppInputLabeled
-                label="Qty"
-                type="number"
-                min={1}
-                step={1}
-                value={String(line.quantity)}
-                onChange={(e) => updateLine(line.key, { quantity: Number(e.target.value) || 0 })}
-              />
-            </div>
-            <div className="sm:col-span-1">
-              <AppInputLabeled
-                label="Unit cost"
-                type="number"
-                min={0}
-                step={0.01}
-                value={String(line.unit_cost)}
-                onChange={(e) => updateLine(line.key, { unit_cost: Number(e.target.value) || 0 })}
-              />
-            </div>
-            <button
-              type="button"
-              className="sm:col-span-1 text-xs text-slate-500 hover:text-red-600"
-              onClick={() => setLines((prev) => (prev.length === 1 ? prev : prev.filter((l) => l.key !== line.key)))}
-            >
-              Remove
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          className="text-sm text-indigo-600 dark:text-indigo-400"
-          onClick={() =>
-            setLines((prev) => [...prev, { key: String(Date.now()), description: '', quantity: 1, unit_cost: 0 }])
-          }
-        >
-          + Add line
-        </button>
-      </section>
-
-      <p className="text-sm text-slate-600 dark:text-slate-300">
-        Subtotal {subtotal.toFixed(2)} · Tax {taxAmount.toFixed(2)} · <strong>Total {total.toFixed(2)} ZAR</strong>
-      </p>
-      <AppLabeledAreaInput label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
-
-      <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-        >
-          {saving ? 'Saving…' : 'Save purchase order'}
-        </button>
-        <button
-          type="button"
-          className="text-sm text-slate-500"
-          onClick={() => navigate('/app/purchasing/orders')}
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : 'Save purchase order'}
+          </button>
+          <button
+            type="button"
+            className="text-sm text-slate-500"
+            onClick={() => navigate('/app/purchasing/orders')}
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 

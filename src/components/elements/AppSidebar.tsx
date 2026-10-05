@@ -91,7 +91,7 @@ const AppSidebar = () => {
         {navLink('/app/dashboard', 'Dashboard', <LuLayoutDashboard className="w-4 h-4" />)}
         {navLink('/app/companies', 'Companies', <LuBuilding2 className="w-4 h-4" />)}
         {navLink('/app/documents', 'Documents', <LuFileText className="w-4 h-4" />)}
-        {navLink('/app/purchasing', 'Purchasing', <LuShoppingCart className="w-4 h-4" />)}
+        {navLink('/app/purchasing', 'Payments', <LuShoppingCart className="w-4 h-4" />)}
         {canManagePayroll && navLink('/app/payroll', 'Payroll', <LuUsers className="w-4 h-4" />)}
         {navLink('/app/items', 'Stock', <LuPackage className="w-4 h-4" />)}
         {navLink('/app/payments', 'Payments', <LuWallet className="w-4 h-4" />)}
