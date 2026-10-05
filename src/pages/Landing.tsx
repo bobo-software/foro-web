@@ -1,21 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LuFileText, LuReceipt, LuKanban, LuUsers, LuCheck, LuX } from 'react-icons/lu';
+import { MotionConfig, motion, useMotionValueEvent, useScroll, useSpring, useTransform } from 'motion/react';
+import { LuArrowRight, LuSparkles } from 'react-icons/lu';
 import toast from 'react-hot-toast';
 import useAuthStore from '../stores/data/AuthStore';
-import { usePricingStore } from '../stores/data/PricingStore';
-import { PRICING_TIERS, YEARLY_DISCOUNT_PERCENT, withLivePricing } from '../config/pricingTiers';
+import { HeroMockup } from './landing/HeroMockup';
+import { FeaturesSection } from './landing/FeaturesSection';
+import { WorkflowSection } from './landing/WorkflowSection';
+import { PricingSection } from './landing/PricingSection';
+import { EASE, Reveal, RotatingWord } from './landing/motionPrimitives';
+
+const MotionLink = motion.create(Link);
+
+const HEADLINE = ['Invoicing', 'and', 'statements,'];
+const ROTATING_WORDS = ['simplified', 'on autopilot', 'done right'];
 
 export function Landing() {
   const navigate = useNavigate();
   const hasRedirected = useRef(false);
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
-  const liveAmounts = usePricingStore((s) => s.liveAmounts);
-  const fetchLivePricing = usePricingStore((s) => s.fetchLivePricing);
-  const pricingTiers = useMemo(() => withLivePricing(PRICING_TIERS, liveAmounts), [liveAmounts]);
-  useEffect(() => {
-    void fetchLivePricing();
-  }, [fetchLivePricing]);
   useEffect(() => {
     if (hasRedirected.current) return;
     const { sessionUser, accessToken } = useAuthStore.getState();
@@ -26,280 +28,227 @@ export function Landing() {
     }
   }, [navigate]);
 
+  const { scrollY, scrollYProgress } = useScroll();
+  const progressX = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 });
+  const [scrolled, setScrolled] = useState(false);
+  useMotionValueEvent(scrollY, 'change', (y) => setScrolled(y > 12));
+
+  // Background blobs drift slower than the page for a light parallax.
+  const blobY = useTransform(scrollY, [0, 800], [0, 160]);
+
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-slate-950">
-      {/* Background */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-[60vh] bg-gradient-to-b from-indigo-500/5 to-transparent dark:from-indigo-500/10 rounded-b-[50%] blur-3xl" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#64748b0a_1px,transparent_1px),linear-gradient(to_bottom,#64748b0a_1px,transparent_1px)] bg-[size:4rem_4rem] dark:opacity-30" />
-      </div>
+    <MotionConfig reducedMotion="user">
+      <div className="min-h-screen flex flex-col bg-white dark:bg-slate-950 overflow-x-clip">
+        {/* Scroll progress */}
+        <motion.div
+          className="fixed inset-x-0 top-0 z-50 h-0.5 origin-left bg-gradient-to-r from-indigo-500 via-violet-500 to-emerald-500"
+          style={{ scaleX: progressX }}
+        />
 
-      {/* Nav */}
-      <header className="relative z-10 border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2.5 text-slate-900 dark:text-white no-underline">
-            <img src="/favicon.png" alt="" className="h-9 w-9 rounded-lg object-contain" />
-            <span className="text-xl font-bold tracking-tight">Foro</span>
-          </Link>
-          <nav className="flex items-center gap-2">
-            <Link
-              to="/login"
-              className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 no-underline"
-            >
-              Log in
-            </Link>
-            <Link
-              to="/register"
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition no-underline shadow-sm shadow-indigo-500/25"
-            >
-              Get started
-            </Link>
-          </nav>
+        {/* Background */}
+        <div className="fixed inset-0 -z-10 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
+          <motion.div style={{ y: blobY }} className="absolute inset-0">
+            <motion.div
+              className="absolute -top-32 left-[10%] h-[28rem] w-[28rem] rounded-full bg-indigo-500/15 dark:bg-indigo-500/20 blur-3xl"
+              animate={{ x: [0, 80, -40, 0], y: [0, 50, 20, 0], scale: [1, 1.15, 0.95, 1] }}
+              transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <motion.div
+              className="absolute top-20 right-[5%] h-[24rem] w-[24rem] rounded-full bg-violet-500/15 dark:bg-violet-500/20 blur-3xl"
+              animate={{ x: [0, -60, 30, 0], y: [0, 30, -30, 0], scale: [1, 0.9, 1.1, 1] }}
+              transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <motion.div
+              className="absolute top-[28rem] left-1/3 h-[20rem] w-[20rem] rounded-full bg-emerald-400/10 dark:bg-emerald-500/10 blur-3xl"
+              animate={{ x: [0, 50, -50, 0], y: [0, -40, 10, 0] }}
+              transition={{ duration: 28, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </motion.div>
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#64748b0a_1px,transparent_1px),linear-gradient(to_bottom,#64748b0a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)] dark:opacity-30" />
         </div>
-      </header>
 
-      {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-20 sm:py-28">
-        <div className="max-w-3xl mx-auto text-center space-y-8">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white tracking-tight leading-[1.1]">
-            Invoicing and statements,{' '}
-            <span className="text-indigo-600 dark:text-indigo-400">simplified</span>
-          </h1>
-          <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Create quotes, turn them into invoices, record payments, and run company statements—all in one place.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
-            <a
-              href="#pricing"
-              className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-8 py-4 text-base font-semibold text-white hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/30 no-underline"
-            >
-              See pricing
-            </a>
-            <Link
-              to="/login"
-              className="inline-flex items-center justify-center rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 px-8 py-4 text-base font-semibold text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 transition no-underline"
-            >
-              Sign in
+        {/* Nav */}
+        <motion.header
+          initial={{ y: -64, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, ease: EASE }}
+          className={`sticky top-0 z-40 border-b backdrop-blur-md transition-colors duration-300 ${
+            scrolled
+              ? 'border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 shadow-sm'
+              : 'border-transparent bg-transparent'
+          }`}
+        >
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+            <Link to="/" className="flex items-center gap-2.5 text-slate-900 dark:text-white no-underline">
+              <motion.img
+                src="/favicon.png"
+                alt=""
+                className="h-9 w-9 rounded-lg object-contain"
+                whileHover={{ rotate: -8, scale: 1.08 }}
+              />
+              <span className="text-xl font-bold tracking-tight">Foro</span>
             </Link>
+            <nav className="flex items-center gap-2">
+              <a
+                href="#pricing"
+                className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 no-underline"
+              >
+                Pricing
+              </a>
+              <Link
+                to="/login"
+                className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 no-underline"
+              >
+                Log in
+              </Link>
+              <MotionLink
+                to="/register"
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors no-underline shadow-sm shadow-indigo-500/25"
+              >
+                Get started
+              </MotionLink>
+            </nav>
           </div>
-        </div>
+        </motion.header>
 
-        {/* Features */}
-        <div className="max-w-5xl mx-auto w-full mt-24 sm:mt-32 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            {
-              icon: LuFileText,
-              title: 'Quotes & Invoices',
-              description: 'Create quotes, convert to invoices in one click. Download PDFs and track status.',
-            },
-            {
-              icon: LuReceipt,
-              title: 'Payments & Statements',
-              description: 'Record payments by method—cash, EFT, card. Run statements with running balance.',
-            },
-            {
-              icon: LuKanban,
-              title: 'Projects & Tasks',
-              description: 'Manage work with list, kanban, and timeline views. Track time and budgets per project.',
-            },
-            {
-              icon: LuUsers,
-              title: 'Team & Portal',
-              description: 'Invite team members with role-based access. Share project timelines with clients via portal.',
-            },
-          ].map(({ icon: Icon, title, description }) => (
-            <div
-              key={title}
-              className="group relative rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 p-6 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-900/50 transition"
-            >
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 mb-4 group-hover:bg-indigo-500/15 dark:group-hover:bg-indigo-500/25 transition">
-                <Icon size={24} strokeWidth={1.8} />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{title}</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                {description}
-              </p>
-            </div>
-          ))}
-        </div>
-        {/* Pricing */}
-        <div id="pricing" className="max-w-6xl mx-auto w-full mt-24 sm:mt-32">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight mb-4">
-              Simple, transparent pricing
-            </h2>
-            <p className="text-lg text-slate-600 dark:text-slate-400">
-              Start free. Upgrade as you grow.
-            </p>
-
-            <div className="mt-8 inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/50 p-1">
-              <button
-                type="button"
-                onClick={() => setBillingPeriod('monthly')}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                  billingPeriod === 'monthly'
-                    ? 'bg-slate-900 dark:bg-indigo-600 text-white'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                }`}
+        <main className="flex-1 flex flex-col px-4 sm:px-6 pt-12 pb-24 sm:pt-20">
+          {/* Hero */}
+          <section className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-10 items-center">
+            <div className="text-center lg:text-left space-y-8">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1, ease: EASE }}
+                className="inline-flex items-center gap-2 rounded-full border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/80 dark:bg-indigo-950/40 px-3 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300"
               >
-                Monthly
-              </button>
-              <button
-                type="button"
-                onClick={() => setBillingPeriod('yearly')}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                  billingPeriod === 'yearly'
-                    ? 'bg-slate-900 dark:bg-indigo-600 text-white'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                }`}
-              >
-                Yearly
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                    billingPeriod === 'yearly'
-                      ? 'bg-white/20 text-white'
-                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                  }`}
-                >
-                  Save {YEARLY_DISCOUNT_PERCENT}%
-                </span>
-              </button>
-            </div>
-          </div>
+                <LuSparkles size={14} />
+                Quotes, invoices, purchasing & statements
+              </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-            {pricingTiers.map((tier) => (
-              <div
-                key={tier.id}
-                className={`relative flex flex-col rounded-2xl border p-6 transition ${
-                  tier.highlight
-                    ? 'border-indigo-500 bg-indigo-600 shadow-xl shadow-indigo-500/25'
-                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-900/50'
-                }`}
-              >
-                {tier.badge && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full bg-indigo-500 px-3 py-1 text-xs font-semibold text-white ring-2 ring-indigo-600">
-                    {tier.badge}
-                  </span>
-                )}
-
-                <div className="mb-6">
-                  <h3 className={`text-lg font-bold mb-1 ${tier.highlight ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
-                    {tier.name}
-                  </h3>
-                  <p className={`text-sm mb-4 ${tier.highlight ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'}`}>
-                    {tier.description}
-                  </p>
-                  {billingPeriod === 'monthly' ? (
-                    <div className="flex items-end gap-1">
-                      <span className={`text-4xl font-extrabold tracking-tight ${tier.highlight ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
-                        {tier.price}
-                      </span>
-                      <span className={`text-sm mb-1 ${tier.highlight ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'}`}>
-                        {tier.period}
-                      </span>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="flex items-end gap-1">
-                        <span className={`text-4xl font-extrabold tracking-tight ${tier.highlight ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
-                          {tier.yearlyPrice}
-                        </span>
-                        <span className={`text-sm mb-1 ${tier.highlight ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'}`}>
-                          /yr
-                        </span>
-                      </div>
-                      {tier.amount > 0 && (
-                        <div className={`mt-1 flex items-center gap-2 text-xs ${tier.highlight ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'}`}>
-                          <span className="line-through opacity-70">{tier.yearlyStrikePrice}</span>
-                          <span
-                            className={`rounded-full px-2 py-0.5 font-semibold ${
-                              tier.highlight
-                                ? 'bg-white/20 text-white'
-                                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                            }`}
-                          >
-                            Save {YEARLY_DISCOUNT_PERCENT}%
-                          </span>
-                          <span>· {tier.yearlyMonthlyEquivalent}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <ul className="flex-1 space-y-3 mb-8">
-                  {tier.features.map((f) => (
-                    <li key={f.label} className="flex items-center gap-2.5 text-sm">
-                      {f.included ? (
-                        <LuCheck
-                          size={16}
-                          strokeWidth={2.5}
-                          className={tier.highlight ? 'text-indigo-200 shrink-0' : 'text-indigo-500 shrink-0'}
-                        />
-                      ) : (
-                        <LuX
-                          size={16}
-                          strokeWidth={2.5}
-                          className={tier.highlight ? 'text-indigo-300/50 shrink-0' : 'text-slate-300 dark:text-slate-600 shrink-0'}
-                        />
-                      )}
-                      <span
-                        className={
-                          f.included
-                            ? tier.highlight
-                              ? 'text-indigo-100'
-                              : 'text-slate-700 dark:text-slate-300'
-                            : tier.highlight
-                            ? 'text-indigo-300/50'
-                            : 'text-slate-400 dark:text-slate-600'
-                        }
-                      >
-                        {f.label}
-                      </span>
-                    </li>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white tracking-tight leading-[1.1]">
+                <span className="sr-only">Invoicing and statements, simplified</span>
+                <span aria-hidden>
+                  {HEADLINE.map((word, i) => (
+                    <motion.span
+                      key={word}
+                      className="inline-block mr-[0.25em]"
+                      initial={{ opacity: 0, y: 30, filter: 'blur(10px)' }}
+                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                      transition={{ duration: 0.7, delay: 0.2 + i * 0.1, ease: EASE }}
+                    >
+                      {word}
+                    </motion.span>
                   ))}
-                </ul>
+                  <br />
+                  <motion.span
+                    className="inline-block"
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.7, delay: 0.55, ease: EASE }}
+                  >
+                    <RotatingWord
+                      words={ROTATING_WORDS}
+                      className="bg-gradient-to-r from-indigo-600 via-violet-500 to-indigo-400 dark:from-indigo-400 dark:via-violet-400 dark:to-indigo-300 bg-clip-text text-transparent pb-1"
+                    />
+                  </motion.span>
+                </span>
+              </h1>
 
-                <Link
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.7, ease: EASE }}
+                className="text-lg sm:text-xl text-slate-600 dark:text-slate-400 max-w-xl mx-auto lg:mx-0 leading-relaxed"
+              >
+                Create quotes, turn them into invoices, record payments, and run company statements—all in one place.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.85, ease: EASE }}
+                className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2"
+              >
+                <MotionLink
                   to="/register"
-                  className={`inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold transition no-underline ${
-                    tier.highlight
-                      ? 'bg-white text-indigo-600 hover:bg-indigo-50 shadow-sm'
-                      : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-sm shadow-indigo-500/20'
-                  }`}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="group inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-8 py-4 text-base font-semibold text-white hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-500/30 no-underline"
                 >
-                  Get started
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </main>
+                  Start for free
+                  <LuArrowRight className="transition-transform group-hover:translate-x-1" />
+                </MotionLink>
+                <motion.a
+                  href="#pricing"
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="inline-flex items-center justify-center rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/50 backdrop-blur px-8 py-4 text-base font-semibold text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors no-underline"
+                >
+                  See pricing
+                </motion.a>
+              </motion.div>
+            </div>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-slate-200 dark:border-slate-800 py-6">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-sm text-slate-500 dark:text-slate-400">
-            © {new Date().getFullYear()} Foro
-          </span>
-          <div className="flex items-center gap-6">
-            <Link
-              to="/login"
-              className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 no-underline"
+            <div className="px-8 pb-10 sm:px-12 lg:px-0">
+              <HeroMockup />
+            </div>
+          </section>
+
+          <FeaturesSection />
+          <WorkflowSection />
+          <PricingSection />
+
+          {/* Closing CTA */}
+          <Reveal className="max-w-6xl mx-auto w-full mt-32 sm:mt-40">
+            <motion.div
+              className="relative overflow-hidden rounded-3xl bg-[linear-gradient(120deg,#4f46e5,#7c3aed,#4338ca,#6366f1)] bg-[length:300%_300%] px-6 py-16 sm:px-16 text-center shadow-2xl shadow-indigo-500/30"
+              animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+              transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
             >
-              Log in
-            </Link>
-            <Link
-              to="/register"
-              className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 no-underline"
-            >
-              Register
-            </Link>
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.18),transparent_45%)]" />
+              <h2 className="relative text-3xl sm:text-4xl font-bold text-white tracking-tight mb-4">
+                Ready to get paid faster?
+              </h2>
+              <p className="relative text-lg text-indigo-100 max-w-xl mx-auto mb-8">
+                Set up your business in minutes. Start free and upgrade as you grow.
+              </p>
+              <MotionLink
+                to="/register"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
+                className="group relative inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 text-base font-semibold text-indigo-600 shadow-lg hover:bg-indigo-50 transition-colors no-underline"
+              >
+                Create your account
+                <LuArrowRight className="transition-transform group-hover:translate-x-1" />
+              </MotionLink>
+            </motion.div>
+          </Reveal>
+        </main>
+
+        {/* Footer */}
+        <footer className="relative z-10 border-t border-slate-200 dark:border-slate-800 py-6">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <span className="text-sm text-slate-500 dark:text-slate-400">© {new Date().getFullYear()} Foro</span>
+            <div className="flex items-center gap-6">
+              <Link
+                to="/login"
+                className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 no-underline"
+              >
+                Log in
+              </Link>
+              <Link
+                to="/register"
+                className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 no-underline"
+              >
+                Register
+              </Link>
+            </div>
           </div>
-        </div>
-      </footer>
-    </div>
+        </footer>
+      </div>
+    </MotionConfig>
   );
 }

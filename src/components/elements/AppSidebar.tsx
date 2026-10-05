@@ -11,10 +11,12 @@ import {
   LuFolderOpen,
   LuShoppingCart,
   LuCreditCard,
+  LuUsers,
 } from 'react-icons/lu';
 import AppText from '@/components/text/AppText';
 import useThemeStore from '../../stores/state/ThemeStore';
 import { useBusinessStore } from '../../stores/data/BusinessStore';
+import { useCanManagePayroll } from '../../hooks/useBusinessRole';
 import StorageService from '../../services/storageService';
 
 const AppSidebar = () => {
@@ -22,6 +24,7 @@ const AppSidebar = () => {
   const theme = useThemeStore((s) => s.theme);
   const isDark = theme === 'dark';
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
+  const { canManage: canManagePayroll } = useCanManagePayroll(currentBusiness?.id);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -89,6 +92,7 @@ const AppSidebar = () => {
         {navLink('/app/companies', 'Companies', <LuBuilding2 className="w-4 h-4" />)}
         {navLink('/app/documents', 'Documents', <LuFileText className="w-4 h-4" />)}
         {navLink('/app/purchasing', 'Purchasing', <LuShoppingCart className="w-4 h-4" />)}
+        {canManagePayroll && navLink('/app/payroll', 'Payroll', <LuUsers className="w-4 h-4" />)}
         {navLink('/app/items', 'Stock', <LuPackage className="w-4 h-4" />)}
         {navLink('/app/payments', 'Payments', <LuWallet className="w-4 h-4" />)}
         {navLink('/app/projects', 'Projects', <LuFolderOpen className="w-4 h-4" />)}

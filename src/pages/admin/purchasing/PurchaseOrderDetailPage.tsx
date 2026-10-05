@@ -3,26 +3,36 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AppInputLabeled from '@/components/forms/AppLabledInput';
 import { useCompanyStore } from '@/stores/data/CompanyStore';
+import { useSupplierStore } from '@/stores/data/SupplierStore';
 import PurchaseOrderService from '@/services/purchaseOrderService';
 import { BillService } from '@/services/billService';
 import type { Bill, PurchaseOrder, PurchaseOrderItem } from '@/types/purchase';
 import { formatCurrency } from '@/utils/currency';
+
+const APPROVAL_CLASSES: Record<string, string> = {
+  pending: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  approved: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+};
 
 export function PurchaseOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const companies = useCompanyStore((s) => s.companies);
   const fetchCompanies = useCompanyStore((s) => s.fetchCompanies);
+  const suppliers = useSupplierStore((s) => s.suppliers);
+  const fetchSuppliers = useSupplierStore((s) => s.fetchSuppliers);
   const [po, setPo] = useState<PurchaseOrder | null>(null);
   const [lines, setLines] = useState<PurchaseOrderItem[]>([]);
   const [bill, setBill] = useState<Bill | null>(null);
   const [dueDate, setDueDate] = useState('');
   const [receiving, setReceiving] = useState(false);
+  const [approving, setApproving] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     void fetchCompanies();
-  }, [fetchCompanies]);
+    void fetchSuppliers();
+  }, [fetchCompanies, fetchSuppliers]);
 
   useEffect(() => {
     if (!id) return;
@@ -48,8 +58,25 @@ export function PurchaseOrderDetailPage() {
     };
   }, [id]);
 
-  const supplierName = companies.find((c) => c.id === po?.company_id)?.name ?? '—';
+  const supplierName =
+    suppliers.find((s) => s.id === po?.supplier_id)?.name ??
+    companies.find((c) => c.id === po?.company_id)?.name ??
+    '—';
   const canReceive = po?.status === 'draft' || po?.status === 'sent';
+
+  const handleApprove = async () => {
+    if (!po?.id) return;
+    setApproving(true);
+    try {
+      const updated = await PurchaseOrderService.update(po.id, { approval_status: 'approved' });
+      setPo(updated);
+      toast.success('Purchase order approved');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to approve purchase order');
+    } finally {
+      setApproving(false);
+    }
+  };
 
   const handleReceive = async () => {
     if (!po?.id) return;
@@ -77,6 +104,23 @@ export function PurchaseOrderDetailPage() {
         </Link>
         <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{po.po_number}</h1>
         <span className="text-xs uppercase tracking-wide text-slate-500">{po.status}</span>
+        {po.approval_status && po.approval_status !== 'not_required' && (
+          <span
+            className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${APPROVAL_CLASSES[po.approval_status] ?? ''}`}
+          >
+            {po.approval_status === 'pending' ? 'Pending approval' : 'Approved'}
+          </span>
+        )}
+        {po.approval_status === 'pending' && (
+          <button
+            type="button"
+            disabled={approving}
+            onClick={() => void handleApprove()}
+            className="text-xs font-medium text-indigo-600 dark:text-indigo-400 disabled:opacity-50"
+          >
+            {approving ? 'Approving…' : 'Approve'}
+          </button>
+        )}
       </div>
 
       <dl className="grid gap-3 sm:grid-cols-2 text-sm">
@@ -84,6 +128,12 @@ export function PurchaseOrderDetailPage() {
           <dt className="text-slate-500">Supplier</dt>
           <dd className="font-medium text-slate-800 dark:text-slate-100">{supplierName}</dd>
         </div>
+        {po.quote_reference && (
+          <div>
+            <dt className="text-slate-500">Quote reference</dt>
+            <dd className="font-medium text-slate-800 dark:text-slate-100">{po.quote_reference}</dd>
+          </div>
+        )}
         <div>
           <dt className="text-slate-500">Issued</dt>
           <dd>{po.issue_date ? new Date(po.issue_date).toLocaleDateString() : '—'}</dd>

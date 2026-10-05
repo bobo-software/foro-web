@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { validatePhone } from '@/components/forms/phone';
 
 const nonEmptyString = (field: string) =>
   z.string({ message: `${field} is required` }).min(1, `${field} is required`);
@@ -82,6 +83,187 @@ export const companySchema = z.object({
 
 export type CompanyInput = z.infer<typeof companySchema>;
 
+// ── Supplier ───────────────────────────────────────────────────────
+export const supplierSchema = z
+  .object({
+    name: nonEmptyString('Supplier name'),
+    contact_person: z.string().optional(),
+    email: z.string().email('Invalid email').optional().or(z.literal('')),
+    phone: z
+      .string()
+      .optional()
+      .refine((value) => value == null || value.trim() === '' || validatePhone(value) == null, {
+        message: 'Enter a valid phone number',
+      }),
+    website: z.string().url('Invalid URL').optional().or(z.literal('')),
+    address: z.string().optional(),
+    vat_number: z.string().optional(),
+    registration_number: z.string().optional(),
+    cost_type: z.enum(['subscription', 'bill', 'company_cost']).optional().nullable(),
+    payment_terms_days: z.number().int().min(0).optional(),
+    currency: z.string().optional(),
+    recurrence_interval: z.enum(['weekly', 'monthly', 'yearly']).optional().nullable(),
+    next_expected_payment_date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Next expected payment must be a valid date')
+      .optional()
+      .nullable()
+      .or(z.literal('')),
+    expected_amount: z.number().nonnegative('Expected amount must be ≥ 0').optional().nullable(),
+    notes: z.string().max(2000).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.recurrence_interval && !data.next_expected_payment_date) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Next expected payment date is required for a recurring supplier',
+        path: ['next_expected_payment_date'],
+      });
+    }
+  });
+
+export type SupplierInput = z.infer<typeof supplierSchema>;
+
+// ── Employee / payroll ─────────────────────────────────────────────
+export const employeeSchema = z
+  .object({
+    first_name: nonEmptyString('First name'),
+    last_name: nonEmptyString('Last name'),
+    known_as: z.string().optional(),
+    id_number: z.string().optional(),
+    passport_number: z.string().optional(),
+    nationality: z.string().optional(),
+    date_of_birth: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date of birth must be a valid date')
+      .optional()
+      .or(z.literal('')),
+    tax_number: z.string().optional(),
+    email: z.string().email('Invalid email').optional().or(z.literal('')),
+    phone: z
+      .string()
+      .optional()
+      .refine((value) => value == null || value.trim() === '' || validatePhone(value) == null, {
+        message: 'Enter a valid phone number',
+      }),
+    address: z.string().optional(),
+    job_title: z.string().optional(),
+    employment_type: z.enum(['permanent', 'fixed_term', 'contractor']),
+    start_date: dateString('Start date'),
+    end_date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'End date must be a valid date')
+      .optional()
+      .or(z.literal('')),
+    pay_frequency: z.enum(['weekly', 'fortnightly', 'monthly']),
+    status: z.enum(['active', 'terminated']),
+    uif_eligible: z.boolean(),
+    paye_registered: z.boolean(),
+    medical_aid_members: z.number().int().min(0).max(20),
+    user_id: z.number().int().positive().nullable().optional(),
+    notes: z.string().max(2000).optional(),
+  })
+  .superRefine((data, ctx) => {
+    const idNumber = data.id_number?.trim() ?? '';
+    const passport = data.passport_number?.trim() ?? '';
+    if (!idNumber && !passport) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Provide a South African ID number or a passport number',
+        path: ['id_number'],
+      });
+    }
+    if (idNumber && !/^\d{13}$/.test(idNumber)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'South African ID number must be 13 digits',
+        path: ['id_number'],
+      });
+    }
+    if (data.status === 'terminated' && !data.end_date) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'End date is required when the employee is terminated',
+        path: ['end_date'],
+      });
+    }
+  });
+
+export type EmployeeInput = z.infer<typeof employeeSchema>;
+
+export const payrollEmployerSettingsSchema = z.object({
+  paye_reference: z.string().optional(),
+  uif_reference: z.string().optional(),
+  sdl_reference: z.string().optional(),
+  sdl_liable: z.boolean(),
+  default_pay_day: z.number().int().min(1).max(31).nullable().optional(),
+  notes: z.string().max(2000).optional(),
+});
+
+export type PayrollEmployerSettingsInput = z.infer<typeof payrollEmployerSettingsSchema>;
+
+export const payrollComponentTypeSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .min(2, 'Code is required')
+    .max(40)
+    .regex(/^[A-Za-z][A-Za-z0-9_]*$/, 'Use letters, digits, and underscores'),
+  name: nonEmptyString('Name'),
+  direction: z.enum(['earning', 'deduction', 'employer']),
+});
+
+export const employeeRecurringComponentSchema = z
+  .object({
+    component_type_id: z.number().int().positive('Choose a component'),
+    calculation_method: z.enum(['amount', 'percent_of_basic']),
+    amount: z.number().nonnegative('Amount must be ≥ 0').optional(),
+    percent: z.number().positive('Percent must be greater than 0').max(100, 'Percent cannot exceed 100').optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.calculation_method === 'percent_of_basic') {
+      if (data.percent == null) {
+        ctx.addIssue({ code: 'custom', message: 'Enter a percent of basic', path: ['percent'] });
+      }
+      return;
+    }
+    if (data.amount == null) {
+      ctx.addIssue({ code: 'custom', message: 'Enter an amount', path: ['amount'] });
+    }
+  });
+
+export const payRunSchema = z
+  .object({
+    period_start: z.string().min(1, 'Period start is required'),
+    period_end: z.string().min(1, 'Period end is required'),
+    pay_date: z.string().min(1, 'Pay date is required'),
+    pay_frequency: z.enum(['weekly', 'fortnightly', 'monthly']),
+    notes: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.period_start && data.period_end && data.period_start > data.period_end) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Period start must be on or before period end',
+        path: ['period_start'],
+      });
+    }
+  });
+
+export const emp201Schema = z.object({
+  period_year: z.number().int().min(2000).max(2100),
+  period_month: z.number().int().min(1, 'Choose a month').max(12, 'Choose a month'),
+});
+
+export const yearEndSchema = z.object({
+  tax_year_id: z.number().int().positive('Choose a tax year'),
+});
+
+export const emp501Schema = z.object({
+  tax_year_id: z.number().int().positive('Choose a tax year'),
+  period_type: z.enum(['interim', 'annual']),
+});
+
 // ── Item ───────────────────────────────────────────────────────────
 export const itemSchema = z.object({
   name: nonEmptyString('Item name'),
@@ -142,6 +324,22 @@ export const paymentSchema = z.object({
 });
 
 export type PaymentInput = z.infer<typeof paymentSchema>;
+
+// ── Cash/card expense ──────────────────────────────────────────────
+export const expenseSchema = z.object({
+  business_id: z.number().int(),
+  date: dateString('Date'),
+  amount: z.number({ message: 'Amount is required' }).positive('Amount must be > 0'),
+  category: z.enum(['fuel', 'travel', 'office', 'meals', 'utilities', 'other'], {
+    message: 'Category is required',
+  }),
+  payee: z.string().max(255).optional(),
+  payment_method: z.enum(['cash', 'eft', 'card', 'cheque', 'bank_transfer', 'other']).optional(),
+  reference: z.string().optional(),
+  notes: z.string().max(2000).optional(),
+});
+
+export type ExpenseInput = z.infer<typeof expenseSchema>;
 
 // ── Project ────────────────────────────────────────────────────────
 export const projectSchema = z.object({

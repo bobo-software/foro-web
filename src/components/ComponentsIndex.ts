@@ -25,3 +25,7 @@ export { ManageCategoriesModal } from './modals/ManageCategoriesModal';
 export type { ManageCategoriesModalProps } from './modals/ManageCategoriesModal';
 export { ConfirmPlanChangeModal } from './modals/ConfirmPlanChangeModal';
 export type { ConfirmPlanChangeModalProps } from './modals/ConfirmPlanChangeModal';
+
+
+// Forms
+export { default as AppLabeledPhoneInput } from './forms/AppLabeledPhoneInput';

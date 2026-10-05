@@ -16,6 +16,8 @@ Always use the shared form components from `src/components/forms/` for all user 
 | Single-select dropdown | `AppLabeledSelectInput` | `AppLabledSelectInput.tsx` |
 | Searchable autocomplete | `AppLabledAutocomplete` | `AppLabledAutocomplete.tsx` |
 | Multi-line text | `AppLabeledAreaInput` | `AppLabledAreaInput.tsx` |
+| Phone (country code + number) | `AppLabeledPhoneInput` | `AppLabeledPhoneInput.tsx` |
+| Checkbox | `AppLabeledCheckbox` | `AppLabeledCheckbox.tsx` |
 
 ## Examples
 
@@ -25,6 +27,8 @@ Always use the shared form components from `src/components/forms/` for all user 
 <AppLabeledSelectInput label="Status" value={status} options={STATUS_LABELS} onChange={(e) => setStatus(e.target.value)} />
 <AppLabledAutocomplete label="Project" options={projects} accessor="name" valueAccessor="id" onSelect={setProject} />
 <AppLabeledAreaInput label="Description" value={desc} onChange={(e) => setDesc(e.target.value)} />
+<AppLabeledPhoneInput label="Phone" value={phone} onChange={setPhone} />
+<AppLabeledCheckbox label="This expense repeats" checked={repeats} onChange={setRepeats} />
 
 // ❌ wrong — raw HTML elements
 <input type="text" value={title} onChange={...} />

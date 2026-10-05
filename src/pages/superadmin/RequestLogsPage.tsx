@@ -8,6 +8,7 @@ import {
   type RequestLogRow,
 } from '@/services/requestLogService';
 import { RequestLogDetailModal } from './RequestLogDetailModal';
+import { SuperadminNav } from './SuperadminNav';
 
 const PAGE_SIZE = 50;
 
@@ -95,8 +96,9 @@ export function RequestLogsPage() {
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 px-4 py-8">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <SuperadminNav />
+      <div className="max-w-6xl mx-auto space-y-6 px-4 py-8">
         <div>
           <h1 className="text-xl font-semibold text-slate-900 dark:text-white">API Request Logs</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">Superadmin-only view of backend API traffic.</p>

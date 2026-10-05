@@ -19,6 +19,8 @@ interface ApiBankingDetailsRow {
   id: number;
   userId: number | null;
   companyId: number | null;
+  supplierId: number | null;
+  employeeId: number | null;
   label: string | null;
   bankName: string;
   accountHolder: string | null;
@@ -40,6 +42,8 @@ function fromApi(row: ApiBankingDetailsRow): BankingDetails {
     id: row.id,
     user_id: row.userId ?? undefined,
     company_id: row.companyId ?? undefined,
+    supplier_id: row.supplierId ?? undefined,
+    employee_id: row.employeeId ?? undefined,
     label: row.label ?? undefined,
     bank_name: row.bankName,
     account_holder: row.accountHolder ?? undefined,
@@ -61,6 +65,8 @@ function toApiBody(data: Partial<CreateBankingDetailsDto>): Record<string, unkno
   const body: Record<string, unknown> = {};
   if (data.user_id !== undefined) body.userId = data.user_id;
   if (data.company_id !== undefined) body.companyId = data.company_id;
+  if (data.supplier_id !== undefined) body.supplierId = data.supplier_id;
+  if (data.employee_id !== undefined) body.employeeId = data.employee_id;
   if (data.label !== undefined) body.label = data.label;
   if (data.bank_name !== undefined) body.bankName = data.bank_name;
   if (data.account_holder !== undefined) body.accountHolder = data.account_holder;
@@ -90,6 +96,8 @@ export class BankingDetailsService {
       offset: params?.offset ?? 0,
       ...(where.company_id !== undefined && { companyId: where.company_id }),
       ...(where.user_id !== undefined && { userId: where.user_id }),
+      ...(where.supplier_id !== undefined && { supplierId: where.supplier_id }),
+      ...(where.employee_id !== undefined && { employeeId: where.employee_id }),
     });
     let rows = (response.data ?? []).map(fromApi);
     if (where.is_primary !== undefined) rows = rows.filter((r) => r.is_primary === where.is_primary);
@@ -107,6 +115,14 @@ export class BankingDetailsService {
       });
     }
     return rows;
+  }
+
+  static async findBySupplierId(supplierId: number): Promise<BankingDetails[]> {
+    return this.findAll({ where: { supplier_id: supplierId } });
+  }
+
+  static async findByEmployeeId(employeeId: number): Promise<BankingDetails[]> {
+    return this.findAll({ where: { employee_id: employeeId } });
   }
 
   static async findByCompanyId(companyId: number): Promise<BankingDetails[]> {
