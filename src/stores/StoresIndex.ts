@@ -24,4 +24,5 @@ export { useBusinessDocumentContextStore } from './data/BusinessDocumentContextS
 export { useTeamStore } from './data/TeamStore';
 export { useBankStore } from './data/BankStore';
 export { useKnownCompanyStore } from './data/KnownCompanyStore';
+export { useRequestLogStore } from './data/RequestLogStore';
 export { default as useThemeStore } from './state/ThemeStore';

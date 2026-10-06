@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LuLayoutDashboard,
+  LuScrollText,
+  LuLibrary,
   LuBuilding2,
   LuPackage,
   LuFileText,
@@ -15,6 +17,7 @@ import {
 } from 'react-icons/lu';
 import AppText from '@/components/text/AppText';
 import useThemeStore from '../../stores/state/ThemeStore';
+import useAuthStore from '../../stores/data/AuthStore';
 import { useBusinessStore } from '../../stores/data/BusinessStore';
 import { useCanManagePayroll } from '../../hooks/useBusinessRole';
 import StorageService from '../../services/storageService';
@@ -23,6 +26,7 @@ const AppSidebar = () => {
   const location = useLocation();
   const theme = useThemeStore((s) => s.theme);
   const isDark = theme === 'dark';
+  const isSuperAdmin = useAuthStore((s) => s.sessionUser?.isSuperAdmin);
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
   const { canManage: canManagePayroll } = useCanManagePayroll(currentBusiness?.id);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -88,7 +92,9 @@ const AppSidebar = () => {
         </Link>
       </div>
       <nav className="flex-1 px-2 py-3 flex flex-col gap-0.5">
-        {navLink('/app/dashboard', 'Dashboard', <LuLayoutDashboard className="w-4 h-4" />)}
+        {navLink('/app/dashboard', 'Dashboard', <LuLayoutDashboard className="w-4 h-4" />, true)}
+        {isSuperAdmin && navLink('/app/request-logs', 'Request logs', <LuScrollText className="w-4 h-4" />)}
+        {isSuperAdmin && navLink('/app/known-companies', 'Known companies', <LuLibrary className="w-4 h-4" />)}
         {navLink('/app/companies', 'Companies', <LuBuilding2 className="w-4 h-4" />)}
         {navLink('/app/documents', 'Documents', <LuFileText className="w-4 h-4" />)}
         {navLink('/app/purchasing', 'Payments', <LuShoppingCart className="w-4 h-4" />)}

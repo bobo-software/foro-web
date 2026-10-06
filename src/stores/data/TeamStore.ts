@@ -17,7 +17,7 @@ interface TeamState {
   createInvite: (input: CreateInviteInput) => Promise<TeamInvite | null>;
   fetchInvites: (businessId: number) => Promise<void>;
   revokeInvite: (inviteId: number, businessId: number) => Promise<void>;
-  resendInvite: (inviteId: number) => Promise<void>;
+  resendInvite: (inviteId: number) => Promise<boolean>;
   fetchInvitePreview: (token: string) => Promise<InvitePreview | null>;
   acceptInvite: (token: string) => Promise<InviteAcceptanceResult | null>;
   fetchMembers: (businessId: number) => Promise<void>;
@@ -74,9 +74,11 @@ export const useTeamStore = create<TeamState>((set) => ({
     try {
       await teamService.resendInvite(inviteId);
       set({ isLoading: false });
+      return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to resend invite';
       set({ error: message, isLoading: false });
+      return false;
     }
   },
 

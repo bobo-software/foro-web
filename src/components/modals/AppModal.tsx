@@ -58,6 +58,13 @@ export interface AppModalProps {
   title: string;
   /** Optional icon shown left of the title */
   titleIcon?: React.ReactNode;
+  /** Secondary line under the title */
+  subtitle?: React.ReactNode;
+  /**
+   * Replaces the default header chrome (border and surface).
+   * Title and close button inherit the header text color.
+   */
+  headerClassName?: string;
   /** Body content */
   children: React.ReactNode;
   /** sm | md | lg | xl | 2xl | full  (default: md) */
@@ -87,6 +94,8 @@ export function AppModal({
   onClose,
   title,
   titleIcon,
+  subtitle,
+  headerClassName,
   children,
   size = 'md',
   buttons,
@@ -140,26 +149,49 @@ export function AppModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="app-modal-title"
-        className={`relative z-10 w-full ${sizeClass} bg-white dark:bg-slate-800 rounded-xl shadow-2xl flex flex-col`}
+        className={`relative z-10 w-full ${sizeClass} bg-white dark:bg-slate-800 rounded-xl shadow-2xl flex flex-col overflow-hidden`}
       >
         {/* ── Header ── */}
-        <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+        <div
+          className={`flex items-center justify-between gap-3 px-5 py-4 shrink-0 ${
+            headerClassName ?? 'border-b border-slate-200 dark:border-slate-700'
+          }`}
+        >
           <div className="flex items-center gap-2.5 min-w-0">
             {titleIcon && (
-              <span className="shrink-0 text-slate-500 dark:text-slate-400">{titleIcon}</span>
+              <span className={`shrink-0 ${headerClassName ? 'text-current' : 'text-slate-500 dark:text-slate-400'}`}>
+                {titleIcon}
+              </span>
             )}
-            <h2
-              id="app-modal-title"
-              className="text-base font-semibold text-slate-900 dark:text-slate-100 truncate"
-            >
-              {title}
-            </h2>
+            <div className="min-w-0">
+              <h2
+                id="app-modal-title"
+                className={`text-base font-semibold truncate ${
+                  headerClassName ? 'text-inherit' : 'text-slate-900 dark:text-slate-100'
+                }`}
+              >
+                {title}
+              </h2>
+              {subtitle != null && subtitle !== '' && (
+                <p
+                  className={`text-xs mt-0.5 truncate ${
+                    headerClassName ? 'text-inherit opacity-80' : 'text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  {subtitle}
+                </p>
+              )}
+            </div>
           </div>
           {showCloseButton && (
             <button
               type="button"
               onClick={onClose}
-              className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              className={`shrink-0 p-1.5 rounded-lg transition-colors ${
+                headerClassName
+                  ? 'text-current hover:bg-white/15'
+                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+              }`}
               aria-label="Close"
             >
               <LuX className="w-4 h-4" />
