@@ -177,22 +177,8 @@ function App() {
             <Route path="/reset-password/verify" element={<VerifyForgotPasswordOtp />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
-            <Route
-              path="/superadmin/request-logs"
-              element={
-                <RequireSuperAdmin>
-                  <RequestLogsPage />
-                </RequireSuperAdmin>
-              }
-            />
-            <Route
-              path="/superadmin/known-companies"
-              element={
-                <RequireSuperAdmin>
-                  <KnownCompaniesPage />
-                </RequireSuperAdmin>
-              }
-            />
+            <Route path="/superadmin/request-logs" element={<Navigate to="/app/request-logs" replace />} />
+            <Route path="/superadmin/known-companies" element={<Navigate to="/app/known-companies" replace />} />
             <Route path="/invite/:token" element={<InviteAccept />} />
             <Route path="/invite/:token/accept" element={<InvitePostAuth />} />
             <Route path="/portal/v/:portalToken" element={<PortalProjectViewPage />} />
@@ -219,6 +205,8 @@ function App() {
             >
               <Route index element={<Navigate to="/app/dashboard" replace />} />
               <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="request-logs" element={<RequireSuperAdmin><RequestLogsPage /></RequireSuperAdmin>} />
+              <Route path="known-companies" element={<RequireSuperAdmin><KnownCompaniesPage /></RequireSuperAdmin>} />
               <Route path="tasks" element={<MyTasksPage />} />
               <Route path="projects" element={<ProjectsOverviewPage />} />
               <Route path="companies" element={<Outlet />}>

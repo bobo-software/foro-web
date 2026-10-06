@@ -69,8 +69,13 @@ export function TeamSettingsTab() {
       role_key: inviteRole,
       business_id: businessId,
     });
-    if (!created) return;
-    toast.success('Invitation created');
+    if (!created) {
+      const message = useTeamStore.getState().error;
+      if (message) toast.error(message);
+      await fetchInvites(businessId);
+      return;
+    }
+    toast.success('Invitation email sent');
     setInviteEmail('');
     setInviteRole('member');
     await fetchInvites(businessId);
@@ -159,7 +164,11 @@ export function TeamSettingsTab() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => void resendInvite(invite.id)}
+                  onClick={() => {
+                    void resendInvite(invite.id).then((sent) => {
+                      if (sent) toast.success('Invitation email resent');
+                    });
+                  }}
                   className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
                 >
                   Resend

@@ -9,8 +9,6 @@ import { AppModal } from '@/components/modals/AppModal';
 import KnownCompanyService from '@/services/knownCompanyService';
 import { useKnownCompanyStore } from '@/stores/data/KnownCompanyStore';
 import type { CreateKnownCompanyDto, KnownCompany } from '@/types/knownCompany';
-import { SuperadminNav } from './SuperadminNav';
-
 const emptyForm: CreateKnownCompanyDto = {
   name: '',
   website: '',
@@ -165,9 +163,7 @@ export function KnownCompaniesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <SuperadminNav />
-      <main className="mx-auto max-w-6xl space-y-4 px-4 py-6">
+    <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Known companies</h1>
@@ -188,7 +184,6 @@ export function KnownCompaniesPage() {
           error={error}
           emptyMessage="No known companies yet."
         />
-      </main>
 
       <AppModal
         isOpen={modalOpen}
