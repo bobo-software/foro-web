@@ -1,18 +1,16 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LuFilePlus } from 'react-icons/lu';
 
+// Each tab's create action lives in its table toolbar.
 const TABS = [
-  { label: 'Purchase orders', path: '/app/purchasing/orders', createPath: '/app/purchasing/orders/create', createLabel: '+ New PO' },
-  { label: 'Suppliers', path: '/app/purchasing/suppliers', createPath: '/app/purchasing/suppliers/create', createLabel: '+ New supplier' },
-  { label: 'Bills', path: '/app/purchasing/bills', createPath: '/app/purchasing/bills/record-expense', createLabel: '+ Record supplier bill' },
-  { label: 'Expenses', path: '/app/purchasing/expenses', createPath: '/app/purchasing/expenses/create', createLabel: '+ Record expense' },
+  { label: 'Summary', path: '/app/purchasing/summary' },
+  { label: 'Purchase orders', path: '/app/purchasing/orders' },
+  { label: 'Suppliers', path: '/app/purchasing/suppliers' },
+  { label: 'Bills', path: '/app/purchasing/bills' },
+  { label: 'Expenses', path: '/app/purchasing/expenses' },
 ] as const;
 
 export function PurchasingPage() {
   const location = useLocation();
-  const activeTab = TABS.find((t) => location.pathname.startsWith(t.path)) ?? TABS[0];
-  const createPath = 'createPath' in activeTab ? activeTab.createPath : undefined;
-  const createLabel = 'createLabel' in activeTab ? activeTab.createLabel : undefined;
 
   return (
     <div className="space-y-2">
@@ -20,15 +18,6 @@ export function PurchasingPage() {
         <h1 className="flex-1 text-sm font-semibold text-slate-800 dark:text-slate-100 leading-none">
           Payments
         </h1>
-        {createPath && createLabel && (
-          <Link
-            to={createPath}
-            className="inline-flex items-center gap-1.5 shrink-0 rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white no-underline hover:bg-indigo-500"
-          >
-            <LuFilePlus size={13} />
-            {createLabel}
-          </Link>
-        )}
       </div>
       <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-700">
         {TABS.map((tab) => {

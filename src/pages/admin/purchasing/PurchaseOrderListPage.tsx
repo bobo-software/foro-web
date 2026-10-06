@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppDataTable, type AppDataTableColumn } from '@/components/elements/AppDataTable';
+import { TableCount, TableFilterSelect, TableSearchInput, TableCreateButton, TableToolbarEnd, TableToolbarStart, matchesSearch } from '@/components/elements/AppTableToolbar';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
 import { useCompanyStore } from '@/stores/data/CompanyStore';
 import { useSupplierStore } from '@/stores/data/SupplierStore';
@@ -15,6 +16,14 @@ const STATUS_CLASSES: Record<string, string> = {
   cancelled: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300',
 };
 
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all', label: 'All statuses' },
+  { value: 'draft', label: 'Draft' },
+  { value: 'sent', label: 'Sent' },
+  { value: 'received', label: 'Received' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
 export function PurchaseOrderListPage() {
   const navigate = useNavigate();
   const businessId = useBusinessStore((s) => s.currentBusiness?.id);
@@ -25,6 +34,8 @@ export function PurchaseOrderListPage() {
   const [rows, setRows] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     void fetchCompanies();
@@ -65,6 +76,16 @@ export function PurchaseOrderListPage() {
     }
     return map;
   }, [suppliers]);
+
+  const supplierName = (row: PurchaseOrder) =>
+    (row.supplier_id != null ? supplierNameById.get(row.supplier_id) : undefined) ??
+    (row.company_id != null ? companyNameById.get(row.company_id) : undefined);
+
+  const filteredRows = rows.filter(
+    (row) =>
+      (filterStatus === 'all' || row.status === filterStatus) &&
+      matchesSearch(search, [row.po_number, supplierName(row), row.quote_reference, row.status]),
+  );
 
   const columns = useMemo<AppDataTableColumn<PurchaseOrder>[]>(
     () => [
@@ -107,20 +128,39 @@ export function PurchaseOrderListPage() {
     [supplierNameById, companyNameById],
   );
 
-  if (loading) {
-    return <p className="text-sm text-slate-500 dark:text-slate-400 py-6">Loading purchase orders…</p>;
-  }
-  if (error) {
-    return <p className="text-sm text-red-600 dark:text-red-400 py-6">{error}</p>;
-  }
-
   return (
     <AppDataTable
+      toolbar={
+        <>
+          <TableToolbarStart>
+            <TableSearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search PO #, supplier…"
+              ariaLabel="Search purchase orders"
+            />
+            <TableFilterSelect
+              value={filterStatus}
+              onChange={setFilterStatus}
+              options={STATUS_FILTER_OPTIONS}
+              ariaLabel="Filter by status"
+            />
+          </TableToolbarStart>
+          <TableToolbarEnd>
+            <TableCount count={filteredRows.length} noun="purchase order" loading={loading} />
+            <TableCreateButton to="/app/purchasing/orders/create" label="New PO" />
+          </TableToolbarEnd>
+        </>
+      }
       columns={columns}
-      data={rows}
+      data={filteredRows}
       getRowKey={(row) => String(row.id)}
       onRowClick={(row) => row.id != null && navigate(`/app/purchasing/orders/${row.id}`)}
-      emptyMessage="No purchase orders yet."
+      loading={loading}
+      error={error}
+      emptyMessage={search.trim() || filterStatus !== 'all' ? 'No purchase orders match your filters.' : 'No purchase orders yet.'}
+      pageSize={20}
+      pageSizeOptions={[10, 20, 50]}
     />
   );
 }

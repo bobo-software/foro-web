@@ -34,6 +34,8 @@ function useBreadcrumbs() {
       segment === 'credit-notes' ? 'Credit Notes' :
       segment === 'quotations' ? 'Quotations' :
       segment === 'payments' ? 'Payments' :
+      segment === 'purchasing' ? 'Payments' :
+      segment === 'summary' ? 'Summary' :
       segment === 'statements' ? 'Statements' :
       segment === 'settings' ? 'Settings' :
       segment === 'business' ? 'Business' :
