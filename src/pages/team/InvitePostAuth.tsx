@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { LuCircleAlert, LuLoaderCircle, LuLogIn, LuUserRoundX } from 'react-icons/lu';
 import toast from 'react-hot-toast';
 import useAuthStore from '@/stores/data/AuthStore';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
 import { useTeamStore } from '@/stores/data/TeamStore';
+import { InviteShell, StatusPanel, primaryButtonClass, secondaryButtonClass } from './inviteShared';
 
 export function InvitePostAuth() {
   const { token = '' } = useParams();
@@ -11,6 +13,7 @@ export function InvitePostAuth() {
   const processed = useRef(false);
 
   const sessionUser = useAuthStore((s) => s.sessionUser);
+  const logout = useAuthStore((s) => s.logout);
   const invitePreview = useTeamStore((s) => s.invitePreview);
   const acceptInvite = useTeamStore((s) => s.acceptInvite);
   const fetchInvitePreview = useTeamStore((s) => s.fetchInvitePreview);
@@ -50,48 +53,95 @@ export function InvitePostAuth() {
     })();
   }, [acceptInvite, emailMatchesInvite, invitePreview, isAuthenticated, navigate, setCurrentBusinessById, token]);
 
+  const returnTo = `/invite/${token}/accept`;
+  const authState = { from: { pathname: returnTo }, email: invitePreview?.email };
+
   if (!isAuthenticated) {
+    const hasAccount = invitePreview?.has_account === true;
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 px-4 py-10">
-        <div className="mx-auto max-w-lg rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
-          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Sign in required</h1>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            Please sign in first to accept this invitation.
-          </p>
-          <Link
-            to="/login"
-            state={{ from: { pathname: `/invite/${token}/accept` } }}
-            className="mt-4 inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white no-underline hover:bg-indigo-500"
+      <InviteShell>
+        <StatusPanel
+          icon={<LuLogIn className="h-6 w-6" />}
+          tone="indigo"
+          title={invitePreview && !hasAccount ? 'Create your account' : 'Sign in to accept'}
+          body={
+            invitePreview ? (
+              <>
+                {hasAccount ? 'Sign in as' : 'Create a Foro account for'}{' '}
+                <strong className="text-slate-800 dark:text-slate-100 break-all">{invitePreview.email}</strong> to join{' '}
+                {invitePreview.business_name || 'this business'}.
+              </>
+            ) : (
+              'Please sign in first to accept this invitation.'
+            )
+          }
+        >
+          {!invitePreview && isLoading ? (
+            <div className="h-10 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700" />
+          ) : (
+            <Link to={invitePreview && !hasAccount ? '/register' : '/login'} state={authState} className={primaryButtonClass}>
+              {invitePreview && !hasAccount ? 'Create account' : 'Sign in'}
+            </Link>
+          )}
+        </StatusPanel>
+      </InviteShell>
+    );
+  }
+
+  if (!emailMatchesInvite) {
+    return (
+      <InviteShell>
+        <StatusPanel
+          icon={<LuUserRoundX className="h-6 w-6" />}
+          tone="amber"
+          title="Wrong account"
+          body={
+            <>
+              This invitation is for <strong className="break-all">{invitePreview?.email}</strong>, but you're signed in
+              as <strong className="break-all">{sessionUser?.email}</strong>.
+            </>
+          }
+        >
+          <button
+            type="button"
+            className={primaryButtonClass}
+            onClick={async () => {
+              await logout();
+              navigate('/login', { state: authState });
+            }}
           >
-            Go to login
+            Switch to {invitePreview?.email}
+          </button>
+        </StatusPanel>
+      </InviteShell>
+    );
+  }
+
+  if (error && !isLoading) {
+    return (
+      <InviteShell>
+        <StatusPanel
+          icon={<LuCircleAlert className="h-6 w-6" />}
+          tone="rose"
+          title="We couldn't accept this invitation"
+          body={error}
+        >
+          <Link to={`/invite/${token}`} className={secondaryButtonClass}>
+            Back to invitation
           </Link>
-        </div>
-      </div>
+        </StatusPanel>
+      </InviteShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 px-4 py-10">
-      <div className="mx-auto max-w-lg rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-          Completing team invite
-        </h1>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-          We are finishing your membership setup for the invited business.
-        </p>
-        {isLoading && <p className="mt-3 text-sm text-slate-500">Finalizing access…</p>}
-        {!emailMatchesInvite && (
-          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
-            This invite is for <strong>{invitePreview?.email}</strong>, but you are signed in as{' '}
-            <strong>{sessionUser?.email}</strong>. Sign in with the invited email to continue.
-          </div>
-        )}
-        {error && !isLoading && (
-          <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900/30 dark:bg-rose-900/20 dark:text-rose-300">
-            {error}
-          </div>
-        )}
-      </div>
-    </div>
+    <InviteShell>
+      <StatusPanel
+        icon={<LuLoaderCircle className="h-6 w-6 animate-spin" />}
+        tone="indigo"
+        title={`Joining ${invitePreview?.business_name || 'the team'}…`}
+        body="Setting up your access. You'll be taken to the dashboard in a moment."
+      />
+    </InviteShell>
   );
 }

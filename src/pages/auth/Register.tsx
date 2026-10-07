@@ -8,13 +8,16 @@ import useAuthStore from '../../stores/data/AuthStore';
 export function Register() {
   const navigate = useNavigate();
   const location = useLocation();
-  const stateFrom = (location.state as { from?: { pathname: string } } | null)?.from?.pathname;
+  const locationState = location.state as { from?: { pathname: string }; email?: string } | null;
+  const stateFrom = locationState?.from?.pathname;
+  const invitedEmail = locationState?.email?.trim() ?? '';
   const returnTo = new URLSearchParams(location.search).get('returnTo') ?? undefined;
   const from = stateFrom ?? returnTo;
   
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(invitedEmail);
+  const emailLocked = invitedEmail.length > 0;
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -157,10 +160,16 @@ export function Register() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
+              readOnly={emailLocked}
+              disabled={isLoading || emailLocked}
               className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-slate-900 dark:text-slate-100 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="you@example.com"
             />
+            {emailLocked && (
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                This email is set by your team invite.
+              </p>
+            )}
           </div>
           
           <div>

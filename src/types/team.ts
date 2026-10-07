@@ -28,6 +28,7 @@ export interface InvitePreview {
   expires_at: string;
   status: TeamInviteStatus;
   reason?: string;
+  has_account: boolean;
 }
 
 export interface TeamMembership {
