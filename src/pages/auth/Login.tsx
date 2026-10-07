@@ -9,11 +9,12 @@ import { AppButton } from '@components/ComponentsIndex';
 export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const stateFrom = (location.state as { from?: { pathname: string } })?.from?.pathname;
+  const locationState = location.state as { from?: { pathname: string }; email?: string } | null;
+  const stateFrom = locationState?.from?.pathname;
   const returnTo = new URLSearchParams(location.search).get('returnTo') ?? undefined;
   const from = stateFrom ?? returnTo;
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(locationState?.email?.trim() ?? '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
