@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { LuPrinter, LuArrowLeft } from 'react-icons/lu';
+import { MarkInvoicePaidModal } from '../modals/MarkInvoicePaidModal';
 import type { Invoice, InvoiceItem } from '../../types/invoice';
 import { ACCOUNT_TYPES } from '../../types/bankingDetails';
 import StorageService from '../../services/storageService';
@@ -33,6 +34,7 @@ export function InvoiceDetail({ invoiceId, fromCompanyId, onEdit, onDelete }: In
   const loadDocumentContext = useBusinessDocumentContextStore((s) => s.loadForCurrentBusiness);
   const [creditedInvoiceLabel, setCreditedInvoiceLabel] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
 
   useEffect(() => {
     loadInvoice();
@@ -170,6 +172,8 @@ export function InvoiceDetail({ invoiceId, fromCompanyId, onEdit, onDelete }: In
 
   const isCn = isCreditNoteInvoice(invoice);
   const inTrash = isTrashed(invoice.deleted_at);
+  const canEdit = invoice.status === 'draft';
+  const canMarkPaid = !isCn && !inTrash && invoice.status !== 'paid' && invoice.status !== 'cancelled';
   const hasNotes = !!invoice.notes || (!!creditedInvoiceLabel && isCn);
 
   const creditNoteCreateSearch = new URLSearchParams();
@@ -216,6 +220,15 @@ export function InvoiceDetail({ invoiceId, fromCompanyId, onEdit, onDelete }: In
             </button>
           ) : (
             <>
+              {canMarkPaid && (
+                <button
+                  type="button"
+                  onClick={() => setPayOpen(true)}
+                  className="inline-flex items-center h-[34px] px-3 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 transition-colors"
+                >
+                  Invoice has been paid
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handlePrint}
@@ -231,7 +244,7 @@ export function InvoiceDetail({ invoiceId, fromCompanyId, onEdit, onDelete }: In
                   Create credit note
                 </Link>
               )}
-              {onEdit && (
+              {onEdit && canEdit && (
                 <button onClick={onEdit} className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 transition-colors">Edit</button>
               )}
               {onDelete && (
@@ -437,6 +450,18 @@ export function InvoiceDetail({ invoiceId, fromCompanyId, onEdit, onDelete }: In
           <p className="text-xs text-gray-300 dark:text-gray-600">Foro by Bobo Softwares (2026)</p>
         </div>
       </div>
+
+      {canMarkPaid && (
+        <MarkInvoicePaidModal
+          invoice={invoice}
+          isOpen={payOpen}
+          onClose={() => setPayOpen(false)}
+          onPaid={() => {
+            setPayOpen(false);
+            void loadInvoice();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -7,7 +7,6 @@ const INVOICE_STATUSES: { value: InvoiceStatus; label: string }[] = [
   { value: 'draft', label: 'Draft' },
   { value: 'accepted', label: 'Accepted' },
   { value: 'sent', label: 'Sent' },
-  { value: 'paid', label: 'Paid' },
   { value: 'overdue', label: 'Overdue' },
   { value: 'cancelled', label: 'Cancelled' },
 ];

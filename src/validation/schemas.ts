@@ -325,6 +325,15 @@ export const paymentSchema = z.object({
 
 export type PaymentInput = z.infer<typeof paymentSchema>;
 
+export const markInvoicePaidSchema = z.object({
+  amount: z.number({ message: 'Amount is required' }).positive('Amount must be > 0'),
+  date: dateString('Payment date'),
+  payment_method: z.enum(['cash', 'eft', 'card', 'cheque', 'bank_transfer', 'other']),
+  reference: z.string().optional(),
+});
+
+export type MarkInvoicePaidInput = z.infer<typeof markInvoicePaidSchema>;
+
 // ── Cash/card expense ──────────────────────────────────────────────
 export const expenseSchema = z.object({
   business_id: z.number().int(),

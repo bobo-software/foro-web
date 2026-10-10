@@ -191,7 +191,7 @@ export function CompanyInvoicesTab({ company, selectedProjectId, invoices, docsL
             },
           }}
         >
-          {menuInvoice?.id != null && (
+          {menuInvoice?.id != null && menuInvoice.status === 'draft' && (
             <MenuItem
               onClick={() => {
                 navigate(`/app/invoices/${menuInvoice.id}/edit?from_company=${company.id}`);

@@ -44,7 +44,8 @@ export function InvoiceForm({
   onSuccess,
   onCancel,
 }: InvoiceFormProps) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(invoiceId));
+  const [loadedStatus, setLoadedStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
 
@@ -369,6 +370,9 @@ export function InvoiceForm({
         setLineRows(rows);
         setBaselineQuantities(computeBaselineQuantities(rows));
         setGlobalDiscountPercent(Number(invoice.discount_percent ?? 0));
+        setLoadedStatus(invoice.status);
+      } else {
+        setLoadedStatus(null);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load invoice');
@@ -649,6 +653,26 @@ export function InvoiceForm({
     return (
       <div className="max-w-[900px] mx-auto px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
         Loading invoice...
+      </div>
+    );
+  }
+
+  if (invoiceId && loadedStatus != null && loadedStatus !== 'draft') {
+    const noun = isCreditNote ? 'credit note' : 'invoice';
+    return (
+      <div className="max-w-[900px] mx-auto px-4 py-6">
+        <h2 className="m-0 text-xl font-semibold text-gray-900 dark:text-gray-100">
+          This {noun} can only be edited while it is a draft.
+        </h2>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="mt-4 inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 transition-colors"
+          >
+            Back to {noun}
+          </button>
+        )}
       </div>
     );
   }
