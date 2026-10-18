@@ -4,7 +4,7 @@
  */
 
 import { foroApiClient } from '../backend';
-import type { Company, CreateCompanyDto } from '../types/company';
+import type { Company, CreateCompanyDto, ForoBusinessMatch } from '../types/company';
 
 const BASE = '/api/v1/companies';
 
@@ -33,6 +33,21 @@ interface ApiCompanyRow {
   showLogoOnDocuments: boolean | null;
   taxEnabled: boolean | null;
   companyType: string | null;
+  linkedBusinessId: number | null;
+}
+
+interface ApiForoBusinessMatch {
+  sourceBusinessId: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  vatNumber: string | null;
+  registrationNumber: string | null;
+  website: string | null;
+  industry: string | null;
+  hasBankingDetails: boolean;
+  alreadyImportedCompanyId: number | null;
 }
 
 function fromApi(row: ApiCompanyRow): Company {
@@ -59,6 +74,7 @@ function fromApi(row: ApiCompanyRow): Company {
     show_logo_on_documents: row.showLogoOnDocuments ?? undefined,
     tax_enabled: row.taxEnabled ?? undefined,
     company_type: (row.companyType as Company['company_type']) ?? 'customer',
+    linked_business_id: row.linkedBusinessId ?? null,
     created_at: row.createdAt ?? undefined,
     updated_at: row.updatedAt ?? undefined,
   };
@@ -149,6 +165,39 @@ export class CompanyService {
 
   static async create(data: CreateCompanyDto): Promise<Company> {
     const response = await foroApiClient.post<ApiCompanyRow>(BASE, toApiBody(data));
+    return fromApi(response.data);
+  }
+
+  /** Foro businesses whose company or owner email is exactly `email`. */
+  static async lookupForoBusinesses(email: string, businessId: number): Promise<ForoBusinessMatch[]> {
+    const response = await foroApiClient.get<ApiForoBusinessMatch[]>(`${BASE}/foro-lookup`, { email, businessId });
+    return (response.data ?? []).map((m) => ({
+      source_business_id: m.sourceBusinessId,
+      name: m.name,
+      email: m.email,
+      phone: m.phone,
+      address: m.address,
+      vat_number: m.vatNumber,
+      registration_number: m.registrationNumber,
+      website: m.website,
+      industry: m.industry,
+      has_banking_details: m.hasBankingDetails,
+      already_imported_company_id: m.alreadyImportedCompanyId,
+    }));
+  }
+
+  /** Copies a Foro business (profile, addresses, primary bank account) into your companies, linked back to it. */
+  static async importFromForo(args: {
+    businessId: number;
+    sourceBusinessId: number;
+    companyType: NonNullable<Company['company_type']>;
+  }): Promise<Company> {
+    const response = await foroApiClient.post<ApiCompanyRow>(`${BASE}/import-from-foro`, args);
+    return fromApi(response.data);
+  }
+
+  static async unlinkFromForo(id: number): Promise<Company> {
+    const response = await foroApiClient.post<ApiCompanyRow>(`${BASE}/${id}/unlink`);
     return fromApi(response.data);
   }
 

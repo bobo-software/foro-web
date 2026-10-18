@@ -47,8 +47,25 @@ export interface Company {
   tax_enabled?: boolean;
   /** Trading relationship: customer (sales), supplier (purchasing), or both */
   company_type?: CompanyType;
+  /** Set when imported from another Foro business — profile, address and banking are read-only while linked. */
+  linked_business_id?: number | null;
   created_at?: string;
   updated_at?: string;
+}
+
+/** A Foro business found by exact email in "Import from Foro". */
+export interface ForoBusinessMatch {
+  source_business_id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  vat_number: string | null;
+  registration_number: string | null;
+  website: string | null;
+  industry: string | null;
+  has_banking_details: boolean;
+  already_imported_company_id: number | null;
 }
 
 export interface CreateCompanyDto {
