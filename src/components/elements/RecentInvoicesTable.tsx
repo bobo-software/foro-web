@@ -11,6 +11,8 @@ export interface RecentInvoicesTableProps {
   error?: string | null;
   title?: string;
   emptyMessage?: string;
+  /** Tenant invoice pages are out of reach for a superadmin with no business. */
+  showViewLink?: boolean;
 }
 
 function formatIssueDate(dateString: string) {
@@ -87,12 +89,14 @@ export function RecentInvoicesTable({
   error = null,
   title = 'Recent invoices and credit notes',
   emptyMessage = 'No invoices yet.',
+  showViewLink = true,
 }: RecentInvoicesTableProps) {
+  const columns = showViewLink ? invoiceColumns : invoiceColumns.filter((column) => column.id !== 'actions');
   return (
     <AppDataTable<Invoice>
       title={title}
       titleIcon={<LuTrendingUp />}
-      columns={invoiceColumns}
+      columns={columns}
       data={invoices}
       getRowKey={(row, index) => row.id ?? `invoice-${index}`}
       getRowClassName={invoiceTableRowClassName}

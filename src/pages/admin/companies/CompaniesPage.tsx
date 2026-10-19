@@ -4,6 +4,7 @@ import { LuFilter, LuUsers } from 'react-icons/lu';
 import { AppDataTable, type AppDataTableColumn } from '@/components/elements/AppDataTable';
 import AppLabeledSelectInput from '@/components/forms/AppLabledSelectInput';
 import { CompanyLogo } from '@/components/elements/CompanyLogo';
+import useAuthStore from '@/stores/data/AuthStore';
 import { useCompanyStore } from '@/stores/data/CompanyStore';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
 import { useAutoRefresh, useProjectId, useSubscriptionLimits } from '@/hooks';
@@ -19,6 +20,19 @@ const companyColumns: AppDataTableColumn<Company>[] = [
       <span className="inline-flex items-center gap-2.5">
         <CompanyLogo path={c.logo_url} name={c.name} size="sm" />
         <span>{c.name}</span>
+        {c.is_owner_company && (
+          <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+            Business
+          </span>
+        )}
+        {c.linked_business_id != null && (
+          <span
+            className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300"
+            title="Linked to their Foro business"
+          >
+            Linked on Foro
+          </span>
+        )}
       </span>
     ),
   },
@@ -50,6 +64,7 @@ const companyColumns: AppDataTableColumn<Company>[] = [
 
 export function CompaniesPage() {
   const navigate = useNavigate();
+  const isSuperAdmin = useAuthStore((s) => s.sessionUser?.isSuperAdmin);
   const { companies, loading, error, fetchCompanies } = useCompanyStore();
   const businessId = useBusinessStore((s) => s.currentBusiness?.id);
   const projectId = useProjectId();
@@ -96,7 +111,9 @@ export function CompaniesPage() {
       <div className="space-y-4">
         <div className="">
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Companies</h1>
-          <p className="text-slate-500 dark:text-slate-400">Manage your companies</p>
+          <p className="text-slate-500 dark:text-slate-400">
+            {isSuperAdmin ? 'Every company on Foro.' : 'Manage your companies'}
+          </p>
         </div>
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 text-center text-slate-500 dark:text-slate-400">
           Loading companies…
@@ -109,7 +126,9 @@ export function CompaniesPage() {
     <div className="space-y-4">
       <div className="">
         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Companies</h1>
-        <p className="text-slate-500 dark:text-slate-400">Manage your companies</p>
+        <p className="text-slate-500 dark:text-slate-400">
+          {isSuperAdmin ? 'Every company on Foro.' : 'Manage your companies'}
+        </p>
       </div>
       <div className="flex items-center gap-3">
         <div className="w-48 shrink-0">
@@ -139,7 +158,7 @@ export function CompaniesPage() {
             aria-label="Search companies"
           />
         </div>
-        {atCompanyLimit ? (
+        {!isSuperAdmin && atCompanyLimit ? (
           <Link
             to="/app/billing"
             title={`${tier === 'free' ? 'Free' : tier} plan is limited to ${limits.companies} companies — upgrade to add more`}
@@ -156,9 +175,11 @@ export function CompaniesPage() {
           </Link>
         )}
       </div>
-      <p className="text-xs text-slate-500 dark:text-slate-400">
-        {clientCompanyCount} of {limits.companies} companies used on your plan.
-      </p>
+      {!isSuperAdmin && (
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          {clientCompanyCount} of {limits.companies} companies used on your plan.
+        </p>
+      )}
 
       <AppDataTable<Company>
         title="Companies"

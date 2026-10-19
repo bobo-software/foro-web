@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import InvoiceService from '../../services/invoiceService';
 import InvoiceItemService from '../../services/invoiceItemService';
 import { useBusinessStore } from './BusinessStore';
-import type { Invoice, CreateInvoiceDto, InvoiceItem } from '../../types/invoice';
+import type { Invoice, CreateInvoiceDto, InvoiceItem, MarkInvoicePaidDto } from '../../types/invoice';
 import { computeNextDocumentNumber } from '../../utils/documentNumber';
 import { computeOrderNumber } from '../../utils/orderNumber';
 
@@ -31,6 +31,7 @@ interface InvoiceState {
     header: Partial<CreateInvoiceDto>,
     lines: InvoiceLineInput[]
   ) => Promise<void>;
+  markInvoicePaid: (invoiceId: number, input: MarkInvoicePaidDto) => Promise<Invoice>;
 }
 
 export const useInvoiceStore = create<InvoiceState>((set, get) => ({
@@ -126,8 +127,18 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
 
   saveInvoiceWithLines: async (invoiceId, header, lines) => {
     const { items: _drop, ...row } = header;
-    await InvoiceService.update(invoiceId, row);
+    // Replace lines before the header so a draft can leave draft in the same save.
+    // Line writes are rejected once the invoice is no longer a draft.
     await InvoiceItemService.deleteByInvoiceId(invoiceId);
     if (lines.length) await InvoiceItemService.insertMany(invoiceId, lines);
+    await InvoiceService.update(invoiceId, row);
+  },
+
+  markInvoicePaid: async (invoiceId, input) => {
+    const updated = await InvoiceService.markPaid(invoiceId, input);
+    set((state) => ({
+      invoices: state.invoices.map((row) => (row.id === invoiceId ? { ...row, ...updated } : row)),
+    }));
+    return updated;
   },
 }));

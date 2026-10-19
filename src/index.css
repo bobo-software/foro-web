@@ -530,3 +530,19 @@
   align-items: center;
   z-index: 9999;
 }
+/* Rendered + editable rich text for signing documents (TipTap output, server-sanitised). */
+@layer components {
+  .foro-rich-text {
+    @apply text-sm leading-relaxed text-slate-800;
+  }
+  .foro-rich-text h1 { @apply text-xl font-bold mt-4 mb-2; }
+  .foro-rich-text h2 { @apply text-lg font-semibold mt-4 mb-2; }
+  .foro-rich-text h3 { @apply text-base font-semibold mt-3 mb-1.5; }
+  .foro-rich-text p { @apply my-2; }
+  .foro-rich-text ul { @apply list-disc pl-6 my-2; }
+  .foro-rich-text ol { @apply list-decimal pl-6 my-2; }
+  .foro-rich-text li > p { @apply my-0.5; }
+  .foro-rich-text blockquote { @apply border-l-4 border-slate-300 pl-3 italic text-slate-600 my-2; }
+  .foro-rich-text a { @apply text-indigo-600 underline; }
+  .foro-rich-text > :first-child { @apply mt-0; }
+}

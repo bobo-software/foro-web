@@ -84,3 +84,10 @@ export interface CreateInvoiceDto {
 export interface UpdateInvoiceDto extends Partial<CreateInvoiceDto> {
   id: number;
 }
+
+export interface MarkInvoicePaidDto {
+  amount: number;
+  date: string;
+  payment_method?: string;
+  reference?: string;
+}

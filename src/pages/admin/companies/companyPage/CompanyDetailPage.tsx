@@ -18,13 +18,23 @@ import {
   CompanyStatementsTab,
   CompanyEditTab,
   CompanyContactsTab,
+  CompanyReceivedTab,
 } from './tabs';
 import { AppPageHeader } from '@/components/ComponentsIndex';
 import { CompanyLogo } from '@/components/elements/CompanyLogo';
 import type { ProjectScope } from './tabs/types';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
 
-type TabId = 'summary' | 'contacts' | 'quotations' | 'invoices' | 'payments' | 'statements' | 'edit';
+type TabId =
+  | 'summary'
+  | 'contacts'
+  | 'quotations'
+  | 'invoices'
+  | 'payments'
+  | 'statements'
+  | 'received-quotations'
+  | 'received-invoices'
+  | 'edit';
 
 export function CompanyDetailPage() {
   const navigate = useNavigate();
@@ -147,9 +157,16 @@ export function CompanyDetailPage() {
       { id: 'invoices' as TabId, label: 'Invoices' },
       { id: 'payments' as TabId, label: 'Payments' },
       { id: 'statements' as TabId, label: 'Statements' },
+      // Linked Foro businesses can send you documents too — shown read-only.
+      ...(company?.linked_business_id != null
+        ? [
+            { id: 'received-quotations' as TabId, label: 'Received quotations' },
+            { id: 'received-invoices' as TabId, label: 'Received invoices' },
+          ]
+        : []),
       { id: 'edit' as TabId, label: 'Edit' },
     ],
-    []
+    [company?.linked_business_id]
   );
 
   const handleCompanyUpdate = (updated: Company) => {
@@ -254,6 +271,8 @@ export function CompanyDetailPage() {
       )}
       {activeTab === 'payments' && <CompanyPaymentsTab {...tabProps} onRefresh={() => setDocsRefreshTick((t) => t + 1)} />}
       {activeTab === 'statements' && <CompanyStatementsTab {...tabProps} />}
+      {activeTab === 'received-quotations' && <CompanyReceivedTab company={company} kind="quotations" />}
+      {activeTab === 'received-invoices' && <CompanyReceivedTab company={company} kind="invoices" />}
       {activeTab === 'edit' && <CompanyEditTab company={company} onCompanyUpdate={handleCompanyUpdate} />}
     </div>
   );

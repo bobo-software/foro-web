@@ -40,11 +40,11 @@ interface ApiBankingDetailsRow {
   iban: string | null;
 }
 
-interface ApiBusinessRow extends ApiCompanyRow {
+export interface ApiBusinessRow extends ApiCompanyRow {
   bankingDetails: ApiBankingDetailsRow | null;
 }
 
-interface ApiInvoiceRow {
+export interface ApiInvoiceRow {
   id: number;
   companyId: number | null;
   invoiceNumber: string;
@@ -70,7 +70,7 @@ interface ApiInvoiceRow {
   creditedInvoiceId: number | null;
 }
 
-interface ApiInvoiceItemRow {
+export interface ApiInvoiceItemRow {
   id: number;
   invoiceId: number;
   itemId: number | null;
@@ -87,7 +87,7 @@ function normalizeCompany(row: ApiCompanyRow): StatementPortalCompany {
   return { id: row.id, name: row.name, businessId: row.businessId };
 }
 
-function normalizeBusiness(row: ApiBusinessRow | null): Business | null {
+export function normalizeBusiness(row: ApiBusinessRow | null): Business | null {
   if (!row) return null;
   return {
     id: row.id,
@@ -103,7 +103,7 @@ function normalizeBusiness(row: ApiBusinessRow | null): Business | null {
   };
 }
 
-function normalizeBankingDetails(row: ApiBankingDetailsRow | null | undefined): BankingDetails | null {
+export function normalizeBankingDetails(row: ApiBankingDetailsRow | null | undefined): BankingDetails | null {
   if (!row) return null;
   return {
     id: row.id,
@@ -119,7 +119,7 @@ function normalizeBankingDetails(row: ApiBankingDetailsRow | null | undefined): 
   };
 }
 
-function normalizeInvoice(row: ApiInvoiceRow): Invoice {
+export function normalizeInvoice(row: ApiInvoiceRow): Invoice {
   return {
     id: row.id,
     company_id: row.companyId,
@@ -147,7 +147,7 @@ function normalizeInvoice(row: ApiInvoiceRow): Invoice {
   };
 }
 
-function normalizeInvoiceItem(row: ApiInvoiceItemRow): InvoiceItem {
+export function normalizeInvoiceItem(row: ApiInvoiceItemRow): InvoiceItem {
   return {
     id: row.id,
     invoice_id: row.invoiceId,

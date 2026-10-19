@@ -36,7 +36,8 @@ export const useBusinessStore = create<BusinessState>((set) => ({
   currentBusiness: null,
   businesses: [],
   activeBusinessId: readPersistedActiveBusinessId(),
-  loading: false,
+  // Starts true so pages don't render "no business" / unscoped data before the first fetch lands.
+  loading: true,
   error: null,
 
   fetchUserBusinesses: async (userId: number) => {

@@ -31,7 +31,7 @@ interface ApiUser {
   isSuperAdmin?: boolean;
 }
 
-interface AuthTokensResponse {
+export interface AuthTokensResponse {
   user: ApiUser;
   accessToken: string;
   refreshToken: string;
@@ -52,6 +52,15 @@ function mapApiUserToSessionUser(payload: AuthTokensResponse): SessionUser {
     phone: user.phone,
     isSuperAdmin: user.isSuperAdmin ?? false,
   };
+}
+
+/** Stores tokens and signs the user into the auth store from a foro-api auth payload. */
+export function applyAuthSession(payload: AuthTokensResponse): SessionUser {
+  const sessionUser = mapApiUserToSessionUser(payload);
+  TokenManager.setAccessToken(payload.accessToken);
+  TokenManager.setRefreshToken(payload.refreshToken);
+  useAuthStore.getState().login(sessionUser);
+  return sessionUser;
 }
 
 /**
@@ -80,10 +89,7 @@ export const authService = {
         throw new Error('Invalid register response');
       }
 
-      const sessionUser = mapApiUserToSessionUser(response.data);
-      TokenManager.setAccessToken(response.data.accessToken);
-      TokenManager.setRefreshToken(response.data.refreshToken);
-      store.login(sessionUser);
+      const sessionUser = applyAuthSession(response.data);
       store.setLoading(false);
       return sessionUser;
     } catch (err: unknown) {
@@ -108,10 +114,7 @@ export const authService = {
         throw new Error('Invalid login response');
       }
 
-      const sessionUser = mapApiUserToSessionUser(response.data);
-      TokenManager.setAccessToken(response.data.accessToken);
-      TokenManager.setRefreshToken(response.data.refreshToken);
-      store.login(sessionUser);
+      const sessionUser = applyAuthSession(response.data);
       store.setLoading(false);
       return sessionUser;
     } catch (err: unknown) {

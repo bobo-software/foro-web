@@ -16,6 +16,8 @@ import { CompanyAddressFields } from './CompanyAddressFields';
 import { CompanyCredentialsFields } from './CompanyCredentialsFields';
 import { CompanyBankingFields } from './CompanyBankingFields';
 import { companySchema, bankingDetailsSchema } from '@/validation/schemas';
+import { ImportFromForoPanel } from './ImportFromForoPanel';
+import { InviteByEmailPanel } from './InviteByEmailPanel';
 
 declare global {
   interface Window {
@@ -148,6 +150,37 @@ export function CompanyFormPage() {
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [mode, setMode] = useState<'manual' | 'foro' | 'invite'>('manual');
+  /** Email carried from a Foro search with no match into the invite tab. */
+  const [inviteEmail, setInviteEmail] = useState('');
+  /** Edit mode: set when this company was imported from Foro — details are read-only until unlinked. */
+  const [linkedBusinessId, setLinkedBusinessId] = useState<number | null>(null);
+  const [unlinking, setUnlinking] = useState(false);
+  const isLinked = isEditMode && linkedBusinessId != null;
+  const lockDetails = saving || isLinked;
+
+  const canAddCompany = () => {
+    const clientCompanyCount = companies.filter((c) => !c.is_owner_company).length;
+    if (clientCompanyCount >= limits.companies) {
+      toast.error(`Your plan is limited to ${limits.companies} companies — upgrade in Settings → Billing to add more.`);
+      return false;
+    }
+    return true;
+  };
+
+  const unlink = async () => {
+    if (!id) return;
+    setUnlinking(true);
+    try {
+      await CompanyService.unlinkFromForo(Number(id));
+      setLinkedBusinessId(null);
+      toast.success('Unlinked — you can now edit this company');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to unlink company');
+    } finally {
+      setUnlinking(false);
+    }
+  };
 
   // Keep the company count fresh for the create-mode plan-limit check below,
   // regardless of whether the user arrived via CompaniesPage or a direct URL.
@@ -179,6 +212,7 @@ export function CompanyFormPage() {
             notes: data.notes || '',
             company_type: data.company_type || 'customer',
           });
+          setLinkedBusinessId(data.linked_business_id ?? null);
           setAddressLookup(data.address || '');
           AddressService.findByCompanyId(data.id!)
             .then((addresses) => {
@@ -311,15 +345,16 @@ export function CompanyFormPage() {
       toast.error(validation.error.issues[0]?.message ?? 'Please check your input');
       return;
     }
-    if (!isEditMode) {
-      const clientCompanyCount = companies.filter((c) => !c.is_owner_company).length;
-      if (clientCompanyCount >= limits.companies) {
-        toast.error(`Your plan is limited to ${limits.companies} companies — upgrade in Settings → Billing to add more.`);
-        return;
-      }
-    }
+    if (!isEditMode && !canAddCompany()) return;
     setSaving(true);
     try {
+      if (isLinked) {
+        // Linked companies only own their relationship type; the rest mirrors the Foro business.
+        await CompanyService.update(Number(id), { company_type: form.company_type });
+        toast.success('Company updated');
+        navigate(`/app/companies/${id}`);
+        return;
+      }
       const payload = {
         ...form,
         ...(businessId != null && { business_id: businessId }),
@@ -483,6 +518,46 @@ export function CompanyFormPage() {
           {isEditMode ? 'Edit company' : 'Create New company'}
         </h1>
       </div>
+      {!isEditMode && (
+        <div className="mt-6 flex items-center gap-1 border-b border-slate-200 dark:border-slate-700">
+          {(
+            [
+              { key: 'manual', label: 'Enter details' },
+              { key: 'foro', label: 'Import from Foro' },
+              { key: 'invite', label: 'Invite by email' },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setMode(tab.key)}
+              className={`-mb-px border-b-2 px-3 py-1.5 text-sm font-medium transition-colors ${
+                mode === tab.key
+                  ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {isLinked && (
+        <div className="mt-6 flex flex-col gap-3 rounded-lg border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-200 sm:flex-row sm:items-center">
+          <p className="flex-1">
+            This company is linked to its Foro business, so its details, address and banking are read-only. You can
+            still change whether they're a customer or supplier. Unlink to edit everything yourself.
+          </p>
+          <button
+            type="button"
+            onClick={() => void unlink()}
+            disabled={unlinking}
+            className="shrink-0 rounded-lg border border-indigo-300 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 dark:border-indigo-700 dark:bg-slate-800 dark:text-indigo-300"
+          >
+            {unlinking ? 'Unlinking…' : 'Unlink from Foro'}
+          </button>
+        </div>
+      )}
       {hasNoBusiness && !isEditMode && (
         <div className="mt-6 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-800 dark:text-amber-200">
           Add your business first before creating companies.{' '}
@@ -491,6 +566,23 @@ export function CompanyFormPage() {
           </Link>
         </div>
       )}
+      {!isEditMode && mode === 'invite' ? (
+        <InviteByEmailPanel
+          key={inviteEmail}
+          businessId={businessId}
+          canAddCompany={canAddCompany}
+          initialEmail={inviteEmail}
+        />
+      ) : !isEditMode && mode === 'foro' ? (
+        <ImportFromForoPanel
+          businessId={businessId}
+          canAddCompany={canAddCompany}
+          onInviteByEmail={(email) => {
+            setInviteEmail(email);
+            setMode('invite');
+          }}
+        />
+      ) : (
       <form
         onSubmit={handleSubmit}
         className="mt-6 flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm lg:p-8"
@@ -509,7 +601,7 @@ export function CompanyFormPage() {
                   required
                   value={form.name}
                   onChange={(e) => update('name', e.target.value)}
-                  disabled={saving}
+                  disabled={lockDetails}
                   placeholder="e.g. Acme Corporation"
                 />
               </div>
@@ -530,7 +622,7 @@ export function CompanyFormPage() {
                   type="text"
                   value={form.contact_person ?? ''}
                   onChange={(e) => update('contact_person', e.target.value)}
-                  disabled={saving}
+                  disabled={lockDetails}
                   placeholder="e.g. John Smith"
                 />
               </div>
@@ -539,14 +631,14 @@ export function CompanyFormPage() {
                 type="email"
                 value={form.email ?? ''}
                 onChange={(e) => update('email', e.target.value)}
-                disabled={saving}
+                disabled={lockDetails}
               />
               <AppInputLabeled
                 label="Phone"
                 type="text"
                 value={form.phone ?? ''}
                 onChange={(e) => update('phone', e.target.value)}
-                disabled={saving}
+                disabled={lockDetails}
               />
             </div>
             <CompanyAddressFields
@@ -556,7 +648,7 @@ export function CompanyFormPage() {
               mapsStatus={mapsStatus}
               addressForm={addressForm}
               onAddressFieldChange={updateAddressField}
-              disabled={saving}
+              disabled={lockDetails}
             />
           </section>
 
@@ -568,14 +660,14 @@ export function CompanyFormPage() {
             <CompanyCredentialsFields
               form={form}
               onChange={update}
-              disabled={saving}
+              disabled={lockDetails}
             />
             <CompanyBankingFields
               includeBankingDetails={includeBankingDetails}
               onToggle={setIncludeBankingDetails}
               bankingForm={bankingForm}
               onBankingFormChange={(updates) => setBankingForm((prev) => ({ ...prev, ...updates }))}
-              disabled={saving}
+              disabled={lockDetails}
             />
           </section>
         </div>
@@ -605,6 +697,7 @@ export function CompanyFormPage() {
           </Link>
         </div>
       </form>
+      )}
     </div>
   );
 }

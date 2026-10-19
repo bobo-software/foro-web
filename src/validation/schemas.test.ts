@@ -6,6 +6,7 @@ import {
   itemSchema,
   itemFormWithBomSchema,
   paymentSchema,
+  markInvoicePaidSchema,
   expenseSchema,
   projectSchema,
   projectTaskCreateSchema,
@@ -225,6 +226,28 @@ describe('paymentSchema', () => {
     for (const method of ['cash', 'eft', 'card', 'cheque', 'bank_transfer', 'other']) {
       expect(paymentSchema.safeParse({ ...valid, payment_method: method }).success).toBe(true);
     }
+  });
+});
+
+describe('markInvoicePaidSchema', () => {
+  const valid = {
+    amount: 250,
+    date: '2026-10-10',
+    payment_method: 'eft' as const,
+  };
+
+  it('accepts amount, date, and method', () => {
+    expect(markInvoicePaidSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it('rejects a missing or non-positive amount', () => {
+    expect(markInvoicePaidSchema.safeParse({ ...valid, amount: 0 }).success).toBe(false);
+    expect(markInvoicePaidSchema.safeParse({ ...valid, amount: undefined }).success).toBe(false);
+  });
+
+  it('rejects a missing or invalid payment date', () => {
+    expect(markInvoicePaidSchema.safeParse({ ...valid, date: '' }).success).toBe(false);
+    expect(markInvoicePaidSchema.safeParse({ ...valid, date: '10 Oct 2026' }).success).toBe(false);
   });
 });
 

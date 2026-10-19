@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import AppText from '@/components/text/AppText';
 import { AppModal } from '@/components/modals/AppModal';
 import { RecentInvoicesTable } from '@/components/elements/RecentInvoicesTable';
+import useAuthStore from '@/stores/data/AuthStore';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
 import { useCompanyStore } from '@/stores/data/CompanyStore';
 import { useDashboardStore } from '@/stores/data/DashboardStore';
@@ -21,6 +22,8 @@ import {
   LuSearch,
   LuBuilding2,
   LuZap,
+  LuFolderOpen,
+  LuLibrary,
 } from 'react-icons/lu';
 
 interface StatCardProps {
@@ -210,6 +213,7 @@ function CompanyPickerModal({ isOpen, action, companies, onClose, onPick }: Comp
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const isSuperAdmin = useAuthStore((s) => s.sessionUser?.isSuperAdmin);
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
   const businessLoading = useBusinessStore((s) => s.loading);
   const businesses = useBusinessStore((s) => s.businesses);
@@ -223,21 +227,31 @@ export function DashboardPage() {
   const hasBankingDetails = useDashboardStore((s) => s.hasBankingDetails);
   const bankingLoading = useDashboardStore((s) => s.bankingLoading);
   const loadSnapshot = useDashboardStore((s) => s.loadSnapshot);
+  const loadApplicationSnapshot = useDashboardStore((s) => s.loadApplicationSnapshot);
   const loadBankingPresence = useDashboardStore((s) => s.loadBankingPresence);
 
   const [pendingAction, setPendingAction] = useState<QuickAction | null>(null);
 
+  // Business-scoped loads wait for the business list — otherwise they run once
+  // unscoped, then again for the real business, and the stats visibly flicker.
   useEffect(() => {
+    if (isSuperAdmin) {
+      void loadApplicationSnapshot();
+      return;
+    }
+    if (businessLoading) return;
     void loadSnapshot(businessId);
-  }, [businessId, loadSnapshot]);
+  }, [isSuperAdmin, businessLoading, businessId, loadSnapshot, loadApplicationSnapshot]);
 
   useEffect(() => {
+    if (isSuperAdmin || businessLoading) return;
     void loadBankingPresence(currentBusiness?.user_id ?? undefined);
-  }, [currentBusiness?.user_id, loadBankingPresence]);
+  }, [isSuperAdmin, businessLoading, currentBusiness?.user_id, loadBankingPresence]);
 
   useEffect(() => {
+    if (isSuperAdmin || businessLoading) return;
     void fetchCompanies();
-  }, [fetchCompanies, businessId]);
+  }, [isSuperAdmin, businessLoading, fetchCompanies, businessId]);
 
   const handleActionClick = (action: QuickAction) => {
     if (companies.length === 0) {
@@ -257,9 +271,18 @@ export function DashboardPage() {
       <div className="flex items-center gap-3">
         <div className="flex-1">
           <AppText variant="h1" className="text-xl" text="Dashboard" />
-          <AppText variant="subtitle" className="text-xs" text="Overview of your CRM and sales activity." />
+          <AppText
+            variant="subtitle"
+            className="text-xs"
+            text={
+              isSuperAdmin
+                ? 'Totals across every business on Foro.'
+                : 'Overview of your CRM and sales activity.'
+            }
+          />
         </div>
         {/* Quick actions */}
+        {!isSuperAdmin && (
         <div className="flex items-center gap-1.5 shrink-0">
           <span className="flex items-center gap-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">
             <LuZap size={11} />Quick actions
@@ -276,8 +299,10 @@ export function DashboardPage() {
             </button>
           ))}
         </div>
+        )}
       </div>
 
+      {!isSuperAdmin && (
       <CompanyPickerModal
         isOpen={pendingAction !== null}
         action={pendingAction}
@@ -285,8 +310,9 @@ export function DashboardPage() {
         onClose={() => setPendingAction(null)}
         onPick={handlePick}
       />
+      )}
 
-      {!businessLoading && businesses.length === 0 && (
+      {!isSuperAdmin && !businessLoading && businesses.length === 0 && (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-900/20">
           <AppText variant="label" className="text-xs text-amber-800 dark:text-amber-200 font-semibold" text="Company setup required" />
           <AppText variant="body" className="text-xs text-amber-800 dark:text-amber-200">
@@ -299,7 +325,7 @@ export function DashboardPage() {
         </div>
       )}
 
-      {!businessLoading && !!currentBusiness && !bankingLoading && !hasBankingDetails && (
+      {!isSuperAdmin && !businessLoading && !!currentBusiness && !bankingLoading && !hasBankingDetails && (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-900/20">
           <AppText variant="label" className="text-xs text-amber-800 dark:text-amber-200 font-semibold" text="Banking details missing" />
           <AppText variant="body" className="text-xs text-amber-800 dark:text-amber-200">
@@ -316,6 +342,14 @@ export function DashboardPage() {
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        {isSuperAdmin && (
+          <StatCard
+            title="Businesses"
+            value={stats.businesses ?? 0}
+            icon={<LuBuilding2 />}
+            loading={loading}
+          />
+        )}
         <StatCard
           title="Companies"
           value={stats.companies}
@@ -327,23 +361,36 @@ export function DashboardPage() {
           title="Invoices"
           value={stats.invoices}
           icon={<LuFileText />}
-          to="/app/documents/invoices"
+          to={isSuperAdmin ? undefined : '/app/documents/invoices'}
           loading={loading}
         />
         <StatCard
           title="Quotations"
           value={stats.quotations}
           icon={<LuQuote />}
-          to="/app/documents/quotations"
+          to={isSuperAdmin ? undefined : '/app/documents/quotations'}
           loading={loading}
         />
         <StatCard
           title="Stock Items"
           value={stats.items}
           icon={<LuPackage />}
-          to="/app/items"
+          to={isSuperAdmin ? undefined : '/app/items'}
           loading={loading}
         />
+        {isSuperAdmin && (
+          <>
+            <StatCard title="Projects" value={stats.projects ?? 0} icon={<LuFolderOpen />} loading={loading} />
+            <StatCard title="Payments" value={stats.payments ?? 0} icon={<LuWallet />} loading={loading} />
+            <StatCard
+              title="Known companies"
+              value={stats.knownCompanies ?? 0}
+              icon={<LuLibrary />}
+              to="/app/known-companies"
+              loading={loading}
+            />
+          </>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -357,7 +404,7 @@ export function DashboardPage() {
             loading={loading}
           />
           <FinancialCard
-            title="Total Paid"
+            title={isSuperAdmin ? 'Payments received' : 'Total Paid'}
             amount={financials.totalPaid}
             icon={<LuCircleCheck />}
             iconColor="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300"
@@ -384,6 +431,7 @@ export function DashboardPage() {
         invoices={recentInvoices}
         loading={loading}
         error={recentError}
+        showViewLink={!isSuperAdmin}
       />
     </div>
   );

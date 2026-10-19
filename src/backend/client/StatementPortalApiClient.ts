@@ -1,6 +1,7 @@
 /**
- * A small, self-contained client for the public client-statement portal
- * (`/api/v1/statement-portal/*`). Deliberately NOT the shared `ForoApiClient` —
+ * A small, self-contained client for the public contact-facing pages — the
+ * client-statement portal (`/api/v1/statement-portal/*`) and document signing
+ * (`/api/v1/document-signing/*`). Deliberately NOT the shared `ForoApiClient` —
  * that client hardcodes its token source to `TokenManager`'s `localStorage`
  * (the admin session). A contact session is a different credential entirely
  * (a distinct 24h JWT, no refresh token, no rotation) and must never share
@@ -19,6 +20,7 @@ export interface ApiResponse<T> {
 }
 
 const CONTACT_SESSION_TOKEN_KEY = 'foro_contact_session_token';
+const SIGNING_SESSION_TOKEN_KEY = 'foro_signing_session_token';
 
 export interface HttpError extends Error {
   status?: number;
@@ -32,12 +34,17 @@ function createHttpError(message: string, status: number, data: unknown): HttpEr
   return e;
 }
 
-class StatementPortalApiClient {
+class PublicSessionApiClient {
   private readonly apiUrl = API_CONFIG.apiUrl;
+
+  constructor(
+    private readonly tokenKey: string,
+    private readonly logTag: string,
+  ) {}
 
   getToken(): string | null {
     try {
-      return window.sessionStorage.getItem(CONTACT_SESSION_TOKEN_KEY);
+      return window.sessionStorage.getItem(this.tokenKey);
     } catch {
       return null;
     }
@@ -45,7 +52,7 @@ class StatementPortalApiClient {
 
   setToken(token: string): void {
     try {
-      window.sessionStorage.setItem(CONTACT_SESSION_TOKEN_KEY, token);
+      window.sessionStorage.setItem(this.tokenKey, token);
     } catch {
       /* sessionStorage unavailable (private browsing etc.) — session just won't persist across reload */
     }
@@ -53,7 +60,7 @@ class StatementPortalApiClient {
 
   clearToken(): void {
     try {
-      window.sessionStorage.removeItem(CONTACT_SESSION_TOKEN_KEY);
+      window.sessionStorage.removeItem(this.tokenKey);
     } catch {
       /* ignore */
     }
@@ -83,7 +90,7 @@ class StatementPortalApiClient {
     try {
       response = await fetch(url, { ...options, headers, body });
     } catch (error) {
-      logger.error(`[statement-portal] ${options.method ?? 'GET'} ${endpoint} network error`, error);
+      logger.error(`[${this.logTag}] ${options.method ?? 'GET'} ${endpoint} network error`, error);
       throw error;
     }
 
@@ -104,5 +111,6 @@ class StatementPortalApiClient {
   }
 }
 
-export const statementPortalApiClient = new StatementPortalApiClient();
+export const statementPortalApiClient = new PublicSessionApiClient(CONTACT_SESSION_TOKEN_KEY, 'statement-portal');
+export const documentSigningApiClient = new PublicSessionApiClient(SIGNING_SESSION_TOKEN_KEY, 'document-signing');
 export default statementPortalApiClient;

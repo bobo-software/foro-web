@@ -4,6 +4,9 @@ import InvoiceService from '../../services/invoiceService';
 import QuotationService from '../../services/quotationService';
 import ItemService from '../../services/itemService';
 import BankingDetailsService from '../../services/bankingDetailsService';
+import SuperadminDashboardService, {
+  type ApplicationDashboardStats,
+} from '../../services/superadminDashboardService';
 import type { Invoice } from '../../types/invoice';
 
 export interface DashboardStats {
@@ -11,6 +14,10 @@ export interface DashboardStats {
   invoices: number;
   quotations: number;
   items: number;
+  businesses?: number;
+  projects?: number;
+  payments?: number;
+  knownCompanies?: number;
 }
 
 export interface DashboardFinancials {
@@ -29,7 +36,21 @@ interface DashboardState {
   hasBankingDetails: boolean;
   bankingLoading: boolean;
   loadSnapshot: (businessId: number | null | undefined) => Promise<void>;
+  loadApplicationSnapshot: () => Promise<void>;
   loadBankingPresence: (userId: number | null | undefined) => Promise<void>;
+}
+
+function applicationStats(stats: ApplicationDashboardStats): DashboardStats {
+  return {
+    businesses: stats.businesses,
+    companies: stats.companies,
+    invoices: stats.invoices,
+    quotations: stats.quotations,
+    items: stats.items,
+    projects: stats.projects,
+    payments: stats.payments,
+    knownCompanies: stats.knownCompanies,
+  };
 }
 
 function computeFinancials(invoices: Invoice[]): DashboardFinancials {
@@ -54,7 +75,8 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   loading: true,
   error: null,
   hasBankingDetails: false,
-  bankingLoading: false,
+  // True until the first check so the "banking details missing" banner can't flash on mount.
+  bankingLoading: true,
 
   loadSnapshot: async (businessId) => {
     set({ loading: true, error: null });
@@ -75,6 +97,24 @@ export const useDashboardStore = create<DashboardState>((set) => ({
         },
         financials: computeFinancials(allInvoices),
         recentInvoices: allInvoices.slice(0, 5),
+        loading: false,
+      });
+    } catch (e) {
+      set({
+        error: e instanceof Error ? e.message : 'Failed to load dashboard',
+        loading: false,
+      });
+    }
+  },
+
+  loadApplicationSnapshot: async () => {
+    set({ loading: true, error: null });
+    try {
+      const snapshot = await SuperadminDashboardService.fetch();
+      set({
+        stats: applicationStats(snapshot.stats),
+        financials: snapshot.financials,
+        recentInvoices: snapshot.recentInvoices,
         loading: false,
       });
     } catch (e) {

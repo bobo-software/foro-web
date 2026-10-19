@@ -4,7 +4,7 @@
  */
 
 import { foroApiClient } from '../backend';
-import type { Invoice, CreateInvoiceDto } from '../types/invoice';
+import type { Invoice, CreateInvoiceDto, MarkInvoicePaidDto } from '../types/invoice';
 import { normalizeDocumentKind } from '../utils/invoiceLedger';
 
 const BASE = '/api/v1/invoices';
@@ -175,6 +175,16 @@ export class InvoiceService {
   static async restore(id: number): Promise<Invoice> {
     const response = await foroApiClient.post<ApiInvoiceRow>(`${BASE}/${id}/restore`);
     return normalizeInvoice(response.data);
+  }
+
+  static async markPaid(id: number, data: MarkInvoicePaidDto): Promise<Invoice> {
+    const response = await foroApiClient.post<{ invoice: ApiInvoiceRow }>(`${BASE}/${id}/mark-paid`, {
+      amount: data.amount,
+      date: data.date,
+      paymentMethod: data.payment_method,
+      reference: data.reference,
+    });
+    return normalizeInvoice(response.data.invoice);
   }
 
   static async findByStatus(status: string): Promise<Invoice[]> {

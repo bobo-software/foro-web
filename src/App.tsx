@@ -37,6 +37,9 @@ const MyTasksPage = lazy(() => import('@/pages/admin/tasks/MyTasksPage').then((m
 const ProjectsOverviewPage = lazy(() =>
   import('@/pages/admin/projects/ProjectsOverviewPage').then((m) => ({ default: m.ProjectsOverviewPage }))
 );
+const CompanyInvitePage = lazy(() => import('@/pages/companyInvite/CompanyInvitePage').then((m) => ({ default: m.CompanyInvitePage })));
+const CompanyInvitePostAuth = lazy(() => import('@/pages/companyInvite/CompanyInvitePostAuth').then((m) => ({ default: m.CompanyInvitePostAuth })));
+const ReceivedDocumentPage = lazy(() => import('@/pages/admin/companies/ReceivedDocumentPage').then((m) => ({ default: m.ReceivedDocumentPage })));
 const CompanyFormPage = lazy(() => import('@/pages/admin/companies/CompanyFormPage').then((m) => ({ default: m.CompanyFormPage })));
 const ItemsPage = lazy(() => import('@pages/admin/ItemsPage').then((m) => ({ default: m.ItemsPage })));
 const ItemDetailPage = lazy(() => import('@pages/admin/ItemDetailPage').then((m) => ({ default: m.ItemDetailPage })));
@@ -45,6 +48,9 @@ const DocumentsPage = lazy(() => import('@pages/admin/DocumentsPage').then((m) =
 const InvoiceList = lazy(() => import('@/components/elements/InvoiceList').then((m) => ({ default: m.InvoiceList })));
 const QuotationList = lazy(() => import('@/components/elements/QuotationList').then((m) => ({ default: m.QuotationList })));
 const DocumentsTrashPage = lazy(() => import('@pages/admin/DocumentsTrashPage').then((m) => ({ default: m.DocumentsTrashPage })));
+const SigningDocumentList = lazy(() => import('@pages/admin/signing/SigningDocumentList').then((m) => ({ default: m.SigningDocumentList })));
+const SigningDocumentFormPage = lazy(() => import('@pages/admin/signing/SigningDocumentFormPage').then((m) => ({ default: m.SigningDocumentFormPage })));
+const SigningDocumentDetailPage = lazy(() => import('@pages/admin/signing/SigningDocumentDetailPage').then((m) => ({ default: m.SigningDocumentDetailPage })));
 const PurchasingPage = lazy(() => import('@pages/admin/purchasing/PurchasingPage').then((m) => ({ default: m.PurchasingPage })));
 const PaymentsSummaryPage = lazy(() => import('@pages/admin/purchasing/PaymentsSummaryPage').then((m) => ({ default: m.PaymentsSummaryPage })));
 const PurchaseOrderListPage = lazy(() => import('@pages/admin/purchasing/PurchaseOrderListPage').then((m) => ({ default: m.PurchaseOrderListPage })));
@@ -94,6 +100,7 @@ const InviteAccept = lazy(() => import('@pages/team/InviteAccept').then((m) => (
 const InvitePostAuth = lazy(() => import('@pages/team/InvitePostAuth').then((m) => ({ default: m.InvitePostAuth })));
 const PortalLandingPage = lazy(() => import('@pages/portal/PortalLandingPage').then((m) => ({ default: m.PortalLandingPage })));
 const PortalProjectViewPage = lazy(() => import('@pages/portal/PortalProjectViewPage').then((m) => ({ default: m.PortalProjectViewPage })));
+const DocumentSigningPage = lazy(() => import('@pages/sign/DocumentSigningPage').then((m) => ({ default: m.DocumentSigningPage })));
 const StatementPortalEntryPage = lazy(() => import('@pages/statements/StatementPortalEntryPage').then((m) => ({ default: m.StatementPortalEntryPage })));
 const StatementPortalViewPage = lazy(() => import('@pages/statements/StatementPortalViewPage').then((m) => ({ default: m.StatementPortalViewPage })));
 const StatementPortalInvoiceViewPage = lazy(() => import('@pages/statements/StatementPortalInvoiceViewPage').then((m) => ({ default: m.StatementPortalInvoiceViewPage })));
@@ -181,9 +188,12 @@ function App() {
             <Route path="/superadmin/known-companies" element={<Navigate to="/app/known-companies" replace />} />
             <Route path="/invite/:token" element={<InviteAccept />} />
             <Route path="/invite/:token/accept" element={<InvitePostAuth />} />
+            <Route path="/company-invite/:token" element={<CompanyInvitePage />} />
+            <Route path="/company-invite/:token/accept" element={<CompanyInvitePostAuth />} />
             <Route path="/portal/v/:portalToken" element={<PortalProjectViewPage />} />
             <Route path="/portal" element={<PortalLandingPage />} />
             <Route path="/statements" element={<StatementPortalEntryPage />} />
+            <Route path="/sign/:token" element={<DocumentSigningPage />} />
             <Route path="/statements/:companyId" element={<StatementPortalViewPage />} />
             <Route path="/statements/:companyId/invoices/:invoiceId" element={<StatementPortalInvoiceViewPage />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
@@ -216,6 +226,7 @@ function App() {
                 <Route path=":id/projects/:projectId" element={<ProjectDetailPage />} />
                 <Route path=":id/projects" element={<CompanyProjectsPage />} />
                 <Route path=":id/edit" element={<CompanyFormPage />} />
+                <Route path=":id/received/:kind/:docId" element={<ReceivedDocumentPage />} />
               </Route>
               <Route path="invoices" element={<Outlet />}>
                 <Route index element={<Navigate to="/app/dashboard" replace />} />
@@ -234,8 +245,12 @@ function App() {
                 <Route path="invoices" element={<InvoiceList />} />
                 <Route path="quotations" element={<QuotationList />} />
                 <Route path="credit-notes" element={<InvoiceList documentKind="credit_note" />} />
+                <Route path="signing" element={<SigningDocumentList />} />
                 <Route path="trash" element={<DocumentsTrashPage />} />
               </Route>
+              <Route path="documents/signing/new" element={<SigningDocumentFormPage />} />
+              <Route path="documents/signing/:id" element={<SigningDocumentDetailPage />} />
+              <Route path="documents/signing/:id/edit" element={<SigningDocumentFormPage />} />
               <Route path="purchasing" element={<PurchasingPage />}>
                 <Route index element={<Navigate to="summary" replace />} />
                 <Route path="summary" element={<PaymentsSummaryPage />} />
