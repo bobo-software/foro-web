@@ -7,7 +7,7 @@ import type { QuotationLine } from '../types/quotation';
 
 const BASE = '/api/v1/quotation-lines';
 
-interface ApiQuotationLineRow {
+export interface ApiQuotationLineRow {
   id: number;
   quotationId: number;
   itemId: number | null;
@@ -20,7 +20,7 @@ interface ApiQuotationLineRow {
   unitType: string;
 }
 
-function fromApi(row: ApiQuotationLineRow): QuotationLine {
+export function quotationLineFromApi(row: ApiQuotationLineRow): QuotationLine {
   return {
     id: row.id,
     quotation_id: row.quotationId,
@@ -54,7 +54,7 @@ export function toApiLine(
 export class QuotationLineService {
   static async findByQuotationId(quotationId: number): Promise<QuotationLine[]> {
     const response = await foroApiClient.get<ApiQuotationLineRow[]>(BASE, { quotationId, limit: 500 });
-    return (response.data ?? []).map(fromApi);
+    return (response.data ?? []).map(quotationLineFromApi);
   }
 
   static async insertMany(

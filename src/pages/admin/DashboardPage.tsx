@@ -232,23 +232,26 @@ export function DashboardPage() {
 
   const [pendingAction, setPendingAction] = useState<QuickAction | null>(null);
 
+  // Business-scoped loads wait for the business list — otherwise they run once
+  // unscoped, then again for the real business, and the stats visibly flicker.
   useEffect(() => {
     if (isSuperAdmin) {
       void loadApplicationSnapshot();
       return;
     }
+    if (businessLoading) return;
     void loadSnapshot(businessId);
-  }, [isSuperAdmin, businessId, loadSnapshot, loadApplicationSnapshot]);
+  }, [isSuperAdmin, businessLoading, businessId, loadSnapshot, loadApplicationSnapshot]);
 
   useEffect(() => {
-    if (isSuperAdmin) return;
+    if (isSuperAdmin || businessLoading) return;
     void loadBankingPresence(currentBusiness?.user_id ?? undefined);
-  }, [isSuperAdmin, currentBusiness?.user_id, loadBankingPresence]);
+  }, [isSuperAdmin, businessLoading, currentBusiness?.user_id, loadBankingPresence]);
 
   useEffect(() => {
-    if (isSuperAdmin) return;
+    if (isSuperAdmin || businessLoading) return;
     void fetchCompanies();
-  }, [isSuperAdmin, fetchCompanies, businessId]);
+  }, [isSuperAdmin, businessLoading, fetchCompanies, businessId]);
 
   const handleActionClick = (action: QuickAction) => {
     if (companies.length === 0) {

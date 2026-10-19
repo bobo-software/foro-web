@@ -37,6 +37,9 @@ const MyTasksPage = lazy(() => import('@/pages/admin/tasks/MyTasksPage').then((m
 const ProjectsOverviewPage = lazy(() =>
   import('@/pages/admin/projects/ProjectsOverviewPage').then((m) => ({ default: m.ProjectsOverviewPage }))
 );
+const CompanyInvitePage = lazy(() => import('@/pages/companyInvite/CompanyInvitePage').then((m) => ({ default: m.CompanyInvitePage })));
+const CompanyInvitePostAuth = lazy(() => import('@/pages/companyInvite/CompanyInvitePostAuth').then((m) => ({ default: m.CompanyInvitePostAuth })));
+const ReceivedDocumentPage = lazy(() => import('@/pages/admin/companies/ReceivedDocumentPage').then((m) => ({ default: m.ReceivedDocumentPage })));
 const CompanyFormPage = lazy(() => import('@/pages/admin/companies/CompanyFormPage').then((m) => ({ default: m.CompanyFormPage })));
 const ItemsPage = lazy(() => import('@pages/admin/ItemsPage').then((m) => ({ default: m.ItemsPage })));
 const ItemDetailPage = lazy(() => import('@pages/admin/ItemDetailPage').then((m) => ({ default: m.ItemDetailPage })));
@@ -185,6 +188,8 @@ function App() {
             <Route path="/superadmin/known-companies" element={<Navigate to="/app/known-companies" replace />} />
             <Route path="/invite/:token" element={<InviteAccept />} />
             <Route path="/invite/:token/accept" element={<InvitePostAuth />} />
+            <Route path="/company-invite/:token" element={<CompanyInvitePage />} />
+            <Route path="/company-invite/:token/accept" element={<CompanyInvitePostAuth />} />
             <Route path="/portal/v/:portalToken" element={<PortalProjectViewPage />} />
             <Route path="/portal" element={<PortalLandingPage />} />
             <Route path="/statements" element={<StatementPortalEntryPage />} />
@@ -221,6 +226,7 @@ function App() {
                 <Route path=":id/projects/:projectId" element={<ProjectDetailPage />} />
                 <Route path=":id/projects" element={<CompanyProjectsPage />} />
                 <Route path=":id/edit" element={<CompanyFormPage />} />
+                <Route path=":id/received/:kind/:docId" element={<ReceivedDocumentPage />} />
               </Route>
               <Route path="invoices" element={<Outlet />}>
                 <Route index element={<Navigate to="/app/dashboard" replace />} />

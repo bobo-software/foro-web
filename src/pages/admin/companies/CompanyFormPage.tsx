@@ -17,6 +17,7 @@ import { CompanyCredentialsFields } from './CompanyCredentialsFields';
 import { CompanyBankingFields } from './CompanyBankingFields';
 import { companySchema, bankingDetailsSchema } from '@/validation/schemas';
 import { ImportFromForoPanel } from './ImportFromForoPanel';
+import { InviteByEmailPanel } from './InviteByEmailPanel';
 
 declare global {
   interface Window {
@@ -149,7 +150,9 @@ export function CompanyFormPage() {
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [mode, setMode] = useState<'manual' | 'foro'>('manual');
+  const [mode, setMode] = useState<'manual' | 'foro' | 'invite'>('manual');
+  /** Email carried from a Foro search with no match into the invite tab. */
+  const [inviteEmail, setInviteEmail] = useState('');
   /** Edit mode: set when this company was imported from Foro — details are read-only until unlinked. */
   const [linkedBusinessId, setLinkedBusinessId] = useState<number | null>(null);
   const [unlinking, setUnlinking] = useState(false);
@@ -521,6 +524,7 @@ export function CompanyFormPage() {
             [
               { key: 'manual', label: 'Enter details' },
               { key: 'foro', label: 'Import from Foro' },
+              { key: 'invite', label: 'Invite by email' },
             ] as const
           ).map((tab) => (
             <button
@@ -562,8 +566,22 @@ export function CompanyFormPage() {
           </Link>
         </div>
       )}
-      {!isEditMode && mode === 'foro' ? (
-        <ImportFromForoPanel businessId={businessId} canAddCompany={canAddCompany} />
+      {!isEditMode && mode === 'invite' ? (
+        <InviteByEmailPanel
+          key={inviteEmail}
+          businessId={businessId}
+          canAddCompany={canAddCompany}
+          initialEmail={inviteEmail}
+        />
+      ) : !isEditMode && mode === 'foro' ? (
+        <ImportFromForoPanel
+          businessId={businessId}
+          canAddCompany={canAddCompany}
+          onInviteByEmail={(email) => {
+            setInviteEmail(email);
+            setMode('invite');
+          }}
+        />
       ) : (
       <form
         onSubmit={handleSubmit}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { LuLink, LuSearch } from 'react-icons/lu';
+import { LuLink, LuMailPlus, LuSearch } from 'react-icons/lu';
 import CompanyService from '@/services/companyService';
 import AppLabeledSelectInput from '@/components/forms/AppLabledSelectInput';
 import { CompanyLogo } from '@/components/elements/CompanyLogo';
@@ -11,6 +11,8 @@ interface ImportFromForoPanelProps {
   businessId: number | undefined;
   /** Plan-limit check shared with the manual create form; returns false to block. */
   canAddCompany: () => boolean;
+  /** Switches to the invite tab with this email when no Foro business matches. */
+  onInviteByEmail: (email: string) => void;
 }
 
 function Detail({ label, value }: { label: string; value: string | null }) {
@@ -27,7 +29,7 @@ function Detail({ label, value }: { label: string; value: string | null }) {
  * Finds a business that already uses Foro by its exact email and adds it as one of
  * your companies, linked back to it — no retyping. The copy stays read-only while linked.
  */
-export function ImportFromForoPanel({ businessId, canAddCompany }: ImportFromForoPanelProps) {
+export function ImportFromForoPanel({ businessId, canAddCompany, onInviteByEmail }: ImportFromForoPanelProps) {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [searching, setSearching] = useState(false);
@@ -109,10 +111,18 @@ export function ImportFromForoPanel({ businessId, canAddCompany }: ImportFromFor
         </form>
 
         {matches !== null && matches.length === 0 && (
-          <div className="rounded-lg border border-dashed border-slate-300 dark:border-slate-600 p-4 text-sm text-slate-500 dark:text-slate-400">
-            No business on Foro uses that email. Check the spelling, or{' '}
-            <span className="font-medium text-slate-700 dark:text-slate-300">enter their details manually</span> in the
-            other tab.
+          <div className="flex flex-col gap-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 p-4 text-sm text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center">
+            <p className="flex-1">
+              No business on Foro uses that email. Invite them to add their own details, or enter them yourself in the
+              first tab.
+            </p>
+            <button
+              type="button"
+              onClick={() => onInviteByEmail(email.trim())}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-indigo-300 bg-white px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50 dark:border-indigo-700 dark:bg-slate-800 dark:text-indigo-300"
+            >
+              <LuMailPlus size={15} /> Invite them by email
+            </button>
           </div>
         )}
 

@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import useAuthStore from '@/stores/data/AuthStore';
 import { useBusinessStore } from '@/stores/data/BusinessStore';
 import { useSubscriptionStore } from '@/stores/data/SubscriptionStore';
 
@@ -16,20 +15,12 @@ interface SubscriptionGateProps {
  * upgrading happens any time from the Billing page.
  */
 export function SubscriptionGate({ children }: SubscriptionGateProps) {
-  const sessionUser = useAuthStore((s) => s.sessionUser);
   const currentBusiness = useBusinessStore((s) => s.currentBusiness);
-  const fetchUserBusinesses = useBusinessStore((s) => s.fetchUserBusinesses);
   const ensureSubscription = useSubscriptionStore((s) => s.ensureSubscription);
   const reconcilePending = useSubscriptionStore((s) => s.reconcilePending);
 
   const businessId = currentBusiness?.id ?? null;
   const ensuredForBusinessId = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (sessionUser?.id != null) {
-      void fetchUserBusinesses(Number(sessionUser.id));
-    }
-  }, [sessionUser?.id, fetchUserBusinesses]);
 
   useEffect(() => {
     if (businessId == null || ensuredForBusinessId.current === businessId) return;

@@ -75,7 +75,8 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   loading: true,
   error: null,
   hasBankingDetails: false,
-  bankingLoading: false,
+  // True until the first check so the "banking details missing" banner can't flash on mount.
+  bankingLoading: true,
 
   loadSnapshot: async (businessId) => {
     set({ loading: true, error: null });

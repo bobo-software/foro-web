@@ -25,6 +25,14 @@ const companyColumns: AppDataTableColumn<Company>[] = [
             Business
           </span>
         )}
+        {c.linked_business_id != null && (
+          <span
+            className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300"
+            title="Linked to their Foro business"
+          >
+            Linked on Foro
+          </span>
+        )}
       </span>
     ),
   },

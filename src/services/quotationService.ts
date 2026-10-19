@@ -11,7 +11,7 @@ import { computeNextDocumentNumber } from '../utils/documentNumber';
 
 const BASE = '/api/v1/quotations';
 
-interface ApiQuotationRow {
+export interface ApiQuotationRow {
   id: number;
   companyId: number | null;
   quotationNumber: string;
@@ -41,7 +41,7 @@ interface ApiQuotationRow {
   deletedAt: string | null;
 }
 
-function normalizeQuotation(row: ApiQuotationRow): Quotation {
+export function normalizeQuotation(row: ApiQuotationRow): Quotation {
   return {
     id: row.id,
     business_id: row.businessId,
