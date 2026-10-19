@@ -46,6 +46,7 @@ interface ApiForoBusinessMatch {
   registrationNumber: string | null;
   website: string | null;
   industry: string | null;
+  logoUrl: string | null;
   hasBankingDetails: boolean;
   alreadyImportedCompanyId: number | null;
 }
@@ -181,6 +182,7 @@ export class CompanyService {
       registration_number: m.registrationNumber,
       website: m.website,
       industry: m.industry,
+      logo_url: m.logoUrl,
       has_banking_details: m.hasBankingDetails,
       already_imported_company_id: m.alreadyImportedCompanyId,
     }));

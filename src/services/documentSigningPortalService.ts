@@ -1,6 +1,6 @@
 /**
  * Public document-signing service — reached from the emailed `/sign/:token` link,
- * OTP-gated. Uses `documentSigningApiClient` (its own sessionStorage token,
+ * OTP-gated while awaiting signature; a signed document's link opens read-only without one. Uses `documentSigningApiClient` (its own sessionStorage token,
  * separate from both the admin session and the statement portal).
  */
 
@@ -111,6 +111,14 @@ export class DocumentSigningPortalService {
       business_name: response.data.businessName,
       recipient_email: response.data.recipientEmail,
     };
+  }
+
+  /** Read-only copy of a signed document — the link alone is enough, no OTP or session. */
+  static async getSignedCopy(token: string): Promise<SigningDocumentView> {
+    const response = await documentSigningApiClient.get<ApiSessionDocument>(
+      `${BASE}/${encodeURIComponent(token)}/signed-copy`,
+    );
+    return normalize(response.data);
   }
 
   static async requestOtp(token: string): Promise<string> {

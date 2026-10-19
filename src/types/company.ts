@@ -64,6 +64,8 @@ export interface ForoBusinessMatch {
   registration_number: string | null;
   website: string | null;
   industry: string | null;
+  /** Storage path of their logo — render with `CompanyLogo` */
+  logo_url: string | null;
   has_banking_details: boolean;
   already_imported_company_id: number | null;
 }

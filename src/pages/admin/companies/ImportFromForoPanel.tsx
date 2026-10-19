@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { LuBuilding2, LuLink, LuSearch } from 'react-icons/lu';
+import { LuLink, LuSearch } from 'react-icons/lu';
 import CompanyService from '@/services/companyService';
 import AppLabeledSelectInput from '@/components/forms/AppLabledSelectInput';
+import { CompanyLogo } from '@/components/elements/CompanyLogo';
 import type { CompanyType, ForoBusinessMatch } from '@/types/company';
 
 interface ImportFromForoPanelProps {
@@ -78,7 +79,7 @@ export function ImportFromForoPanel({ businessId, canAddCompany }: ImportFromFor
         <div>
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">Import a business already on Foro</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Enter their business or login email. We'll pull in their details, address and banking, and link the
+            Enter their business or login email. We'll pull in their logo, details, address, banking and owner contact, and link the
             company to yours so it stays accurate. More linked features are coming soon.
           </p>
         </div>
@@ -135,9 +136,7 @@ export function ImportFromForoPanel({ businessId, canAddCompany }: ImportFromFor
                 className="rounded-lg border border-slate-200 dark:border-slate-700 p-4"
               >
                 <div className="flex items-start gap-3">
-                  <span className="rounded-lg bg-indigo-50 p-2 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300">
-                    <LuBuilding2 size={18} />
-                  </span>
+                  <CompanyLogo path={match.logo_url} name={match.name} size="md" />
                   <div className="min-w-0 flex-1 space-y-1">
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{match.name}</p>
                     <Detail label="Email" value={match.email} />

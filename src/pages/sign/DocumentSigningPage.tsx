@@ -18,7 +18,8 @@ const SECONDARY_BUTTON =
 
 /**
  * Public page behind the emailed signing link: email OTP → view / download / sign.
- * No Foro login — the credential is access to the recipient's inbox.
+ * Once signed, the link opens the read-only copy directly — nothing left to protect
+ * with a code. No Foro login — the credential is access to the recipient's inbox.
  */
 export function DocumentSigningPage() {
   usePortalNoIndex();
@@ -34,6 +35,8 @@ export function DocumentSigningPage() {
   const [signOpen, setSignOpen] = useState(false);
   const [justSigned, setJustSigned] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  /** Opened via a signed document's link — no session, so nothing to sign out of. */
+  const [readOnlyCopy, setReadOnlyCopy] = useState(false);
 
   const loadDocument = useCallback(async () => {
     try {
@@ -61,6 +64,14 @@ export function DocumentSigningPage() {
         const result = await DocumentSigningPortalService.preview(token);
         if (cancelled) return;
         setPreview(result);
+        if (result.status === 'signed') {
+          const copy = await DocumentSigningPortalService.getSignedCopy(token);
+          if (cancelled) return;
+          setView(copy);
+          setReadOnlyCopy(true);
+          setStep('view');
+          return;
+        }
         setStep('intro');
       } catch {
         if (!cancelled) setStep('invalid');
@@ -126,7 +137,7 @@ export function DocumentSigningPage() {
             <span className="text-xl font-bold tracking-tight">Foro</span>
           </Link>
           <div className="flex items-center gap-2">
-            {step === 'view' && (
+            {step === 'view' && !readOnlyCopy && (
               <button
                 type="button"
                 onClick={() => {
