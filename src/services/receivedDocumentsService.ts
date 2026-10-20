@@ -28,7 +28,33 @@ interface IssuerBranding {
   bankingDetails: BankingDetails | null;
 }
 
+export type ReceivedDocumentKind = 'quotation' | 'invoice';
+
+/** One row of `GET /api/v1/received-documents` — documents from every linked sender. */
+export interface ReceivedDocumentSummary {
+  kind: ReceivedDocumentKind;
+  id: number;
+  number: string;
+  issueDate: string;
+  /** Invoice due date or quotation valid-until date. */
+  dueDate: string | null;
+  status: string;
+  total: string;
+  currency: string;
+  /** The current business's company row for the sender (`:id` in the per-company routes). */
+  companyId: number;
+  senderName: string;
+}
+
 export class ReceivedDocumentsService {
+  static async listAll(businessId: number, kind?: ReceivedDocumentKind): Promise<ReceivedDocumentSummary[]> {
+    const res = await foroApiClient.get<ReceivedDocumentSummary[]>('/api/v1/received-documents', {
+      businessId,
+      ...(kind ? { type: kind } : {}),
+    });
+    return res.data ?? [];
+  }
+
   static async listInvoices(companyId: number): Promise<Invoice[]> {
     const res = await foroApiClient.get<ApiInvoiceRow[]>(`${base(companyId)}/invoices`);
     return (res.data ?? []).map(normalizeInvoice);

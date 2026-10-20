@@ -25,4 +25,5 @@ export { useTeamStore } from './data/TeamStore';
 export { useBankStore } from './data/BankStore';
 export { useKnownCompanyStore } from './data/KnownCompanyStore';
 export { useRequestLogStore } from './data/RequestLogStore';
+export { useReceivedDocumentsStore } from './data/ReceivedDocumentsStore';
 export { default as useThemeStore } from './state/ThemeStore';

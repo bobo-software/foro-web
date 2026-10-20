@@ -193,6 +193,18 @@ export class QuotationService {
     return normalizeQuotation(response.data);
   }
 
+  /** Emails the quotation with its PDF attached; a draft becomes `sent`. */
+  static async send(
+    id: number,
+    input: { pdfBase64: string; filename: string; to?: string; message?: string }
+  ): Promise<{ to: string; sentAt: string; quotation: Quotation }> {
+    const response = await foroApiClient.post<{ to: string; sentAt: string; quotation: ApiQuotationRow }>(
+      `${BASE}/${id}/send`,
+      input
+    );
+    return { to: response.data.to, sentAt: response.data.sentAt, quotation: normalizeQuotation(response.data.quotation) };
+  }
+
   static async count(where?: Record<string, unknown>): Promise<number> {
     const rows = await this.findAll({ where, limit: 5000 });
     return rows.length;

@@ -39,6 +39,25 @@ export async function generateStandardDocumentPdf(
   business?: Business | null,
   configOverride?: Partial<DocumentTemplateConfig>
 ): Promise<void> {
+  const doc = await renderStandardDocumentPdf(input, business, configOverride);
+  doc.save(input.filename);
+}
+
+/** Same document as `generateStandardDocumentPdf`, returned as a Blob instead of downloaded. */
+export async function generateStandardDocumentPdfBlob(
+  input: StandardDocumentInput,
+  business?: Business | null,
+  configOverride?: Partial<DocumentTemplateConfig>
+): Promise<Blob> {
+  const doc = await renderStandardDocumentPdf(input, business, configOverride);
+  return doc.output('blob');
+}
+
+async function renderStandardDocumentPdf(
+  input: StandardDocumentInput,
+  business?: Business | null,
+  configOverride?: Partial<DocumentTemplateConfig>
+) {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF();
 
@@ -69,5 +88,5 @@ export async function generateStandardDocumentPdf(
   renderSignatureSection(doc, y, config);
   renderFooter(doc, config);
 
-  doc.save(input.filename);
+  return doc;
 }

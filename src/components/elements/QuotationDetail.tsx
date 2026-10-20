@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { LuCopy, LuPrinter, LuFileText } from 'react-icons/lu';
+import { LuCopy, LuPrinter, LuFileText, LuMail } from 'react-icons/lu';
 import ConverInvoiceModal from '../modals/ConverInvoiceModal';
+import { SendQuotationEmailModal } from '../modals/SendQuotationEmailModal';
 import type { Quotation, QuotationLine, CreateQuotationDto } from '../../types/quotation';
 import type { CreateInvoiceDto, InvoiceStatus } from '../../types/invoice';
 import type { Project } from '../../types/project';
@@ -35,6 +36,7 @@ export function QuotationDetail({ quotationId, onEdit, onDelete }: QuotationDeta
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [duplicating, setDuplicating] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [sendModalOpen, setSendModalOpen] = useState(false);
   const convertInFlightRef = useRef(false);
 
   useEffect(() => {
@@ -333,6 +335,14 @@ export function QuotationDetail({ quotationId, onEdit, onDelete }: QuotationDeta
               </button>
               <button
                 type="button"
+                onClick={() => setSendModalOpen(true)}
+                className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-lg text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 transition-colors"
+              >
+                <LuMail size={15} aria-hidden />
+                {quotation.status === 'draft' ? 'Send by email' : 'Resend'}
+              </button>
+              <button
+                type="button"
                 onClick={() =>
                   quotation.converted_invoice_id != null
                     ? void handleConvertToInvoice()
@@ -571,6 +581,17 @@ export function QuotationDetail({ quotationId, onEdit, onDelete }: QuotationDeta
         vatAmount={vatAmount}
         total={total}
         currency={quotation.currency}
+      />
+
+      <SendQuotationEmailModal
+        quotation={quotation}
+        lines={lineItems}
+        isOpen={sendModalOpen}
+        onClose={() => setSendModalOpen(false)}
+        onSent={(sent) => {
+          setQuotation((prev) => (prev ? { ...prev, status: sent.status } : prev));
+          setSendModalOpen(false);
+        }}
       />
     </div>
   );

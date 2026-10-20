@@ -24,7 +24,11 @@ export interface CompanyInvitePreview {
   has_password: boolean;
   has_business: boolean;
   can_set_password: boolean;
+  /** Set when the invite came with an emailed document that is still live. */
+  document: { type: InviteDocumentType; id: number; number: string } | null;
 }
+
+export type InviteDocumentType = 'quotation' | 'invoice';
 
 /** The recipient's own company, as entered on the invite page. */
 export interface InviteCompanyDetails {
@@ -48,6 +52,8 @@ export interface InviteCompanyDetails {
 export interface InviteAccepted {
   business_id: number;
   linked_company_id: number;
+  /** The emailed document, now in the recipient's received documents. */
+  document: { type: InviteDocumentType; id: number } | null;
 }
 
 function blankToUndefined(value: string | undefined): string | undefined {
