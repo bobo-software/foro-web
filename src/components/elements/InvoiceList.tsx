@@ -16,7 +16,6 @@ function formatDate(dateString: string) {
 const STATUS_CLASSES: Record<string, string> = {
   draft: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
   sent: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  accepted: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
   paid: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
   overdue: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300',
   cancelled: 'bg-slate-50 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400',
@@ -126,8 +125,8 @@ export function InvoiceList({ documentKind }: InvoiceListProps) {
 
   const statusOptions =
     documentKind === 'credit_note'
-      ? ['all', 'draft', 'accepted', 'cancelled']
-      : ['all', 'draft', 'sent', 'accepted', 'paid', 'overdue', 'cancelled'];
+      ? ['all', 'draft', 'sent', 'cancelled']
+      : ['all', 'draft', 'sent', 'paid', 'overdue', 'cancelled'];
 
   const noun = documentKind === 'credit_note' ? 'credit note' : documentKind === 'invoice' ? 'invoice' : 'document';
   const createPath = documentKind === 'credit_note' ? '/app/invoices/create?credit_note=1' : '/app/invoices/create';

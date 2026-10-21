@@ -1,14 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CreateInvoiceDto, InvoiceItem } from '../../types/invoice';
+import type { CreateInvoiceDto, Invoice, InvoiceItem } from '../../types/invoice';
 
 const hoisted = vi.hoisted(() => ({
   createFull: vi.fn(),
+  update: vi.fn(),
+  cancel: vi.fn(),
   insertMany: vi.fn(),
   deleteByInvoiceId: vi.fn(),
 }));
 
 vi.mock('../../services/invoiceService', () => ({
-  default: { createFull: hoisted.createFull },
+  default: {
+    createFull: hoisted.createFull,
+    update: hoisted.update,
+    cancel: hoisted.cancel,
+  },
 }));
 
 vi.mock('../../services/invoiceItemService', () => ({
@@ -53,6 +59,8 @@ const lines: (Omit<InvoiceItem, 'id' | 'invoice_id'> & { item_id?: number })[] =
 describe('InvoiceStore.createInvoiceWithLines', () => {
   beforeEach(() => {
     hoisted.createFull.mockReset().mockResolvedValue({ id: 42 });
+    hoisted.update.mockReset().mockResolvedValue({ rowCount: 1 });
+    hoisted.cancel.mockReset();
     hoisted.insertMany.mockReset();
     hoisted.deleteByInvoiceId.mockReset();
   });
@@ -74,5 +82,22 @@ describe('InvoiceStore.createInvoiceWithLines', () => {
     );
     expect(hoisted.createFull).toHaveBeenCalledTimes(1);
     expect(hoisted.insertMany).not.toHaveBeenCalled();
+  });
+
+  it('never sends status with a normal form save', async () => {
+    await useInvoiceStore.getState().saveInvoiceWithLines(42, { ...header, status: 'sent' }, lines);
+
+    expect(hoisted.update).toHaveBeenCalledWith(42, expect.not.objectContaining({ status: 'sent' }));
+  });
+
+  it('replaces the cached row after cancelling', async () => {
+    const row = { ...header, id: 42, status: 'draft' as const } as unknown as Invoice;
+    hoisted.cancel.mockResolvedValue({ ...row, status: 'cancelled' });
+    useInvoiceStore.setState({ invoices: [row] });
+
+    const updated = await useInvoiceStore.getState().cancelInvoice(42);
+
+    expect(updated.status).toBe('cancelled');
+    expect(useInvoiceStore.getState().invoices[0].status).toBe('cancelled');
   });
 });

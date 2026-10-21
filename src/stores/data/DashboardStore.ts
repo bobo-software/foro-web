@@ -8,6 +8,7 @@ import SuperadminDashboardService, {
   type ApplicationDashboardStats,
 } from '../../services/superadminDashboardService';
 import type { Invoice } from '../../types/invoice';
+import { effectiveInvoiceStatus } from '../../utils/invoiceLifecycle';
 
 export interface DashboardStats {
   companies: number;
@@ -59,11 +60,12 @@ function computeFinancials(invoices: Invoice[]): DashboardFinancials {
   let outstanding = 0;
   let overdue = 0;
   for (const inv of invoices) {
-    if (inv.document_kind === 'credit_note' || inv.status === 'draft' || inv.status === 'cancelled') continue;
+    const status = effectiveInvoiceStatus(inv);
+    if (inv.document_kind === 'credit_note' || status === 'draft' || status === 'cancelled') continue;
     totalBilled += inv.total;
-    if (inv.status === 'paid') totalPaid += inv.total;
-    if (inv.status === 'sent' || inv.status === 'accepted') outstanding += inv.total;
-    if (inv.status === 'overdue') overdue += inv.total;
+    if (status === 'paid') totalPaid += inv.total;
+    if (status === 'sent' || status === 'overdue') outstanding += inv.total;
+    if (status === 'overdue') overdue += inv.total;
   }
   return { totalBilled, totalPaid, outstanding, overdue };
 }

@@ -6,9 +6,12 @@ import type { Business } from '../types/business';
 import { getTemplateConfig } from '../types/documentTemplate';
 import {
   generateStandardDocumentPdf,
+  generateStandardDocumentPdfBlob,
   computePdfTotals,
+  type StandardDocumentInput,
 } from './pdfTemplates/generateStandardDocumentPdf';
 import { useBusinessStore } from '../stores/data/BusinessStore';
+import { effectiveInvoiceStatus } from './invoiceLifecycle';
 
 const INVOICE_STATUS_COLORS: Record<string, [number, number, number]> = {
   draft: [100, 100, 100],
@@ -26,12 +29,17 @@ export async function downloadInvoicePdfById(invoiceId: number): Promise<void> {
   await generateInvoicePdf(invoice, items, business);
 }
 
-/** Invoices always use the classic PDF layout (matches the on-screen invoice view). */
-export async function generateInvoicePdf(
+export function invoicePdfFilename(invoice: Invoice): string {
+  const safeNum = String(invoice.invoice_number).replace(/[^\w.-]+/g, '-');
+  return isCreditNoteInvoice(invoice) ? `credit-note-${safeNum}.pdf` : `invoice-${safeNum}.pdf`;
+}
+
+async function buildInvoicePdfInput(
   invoice: Invoice,
-  lineItems: InvoiceItem[] = [],
+  lineItems: InvoiceItem[],
   business?: Business | null,
-): Promise<void> {
+  statusOverride?: Invoice['status'],
+): Promise<StandardDocumentInput> {
   const isCn = isCreditNoteInvoice(invoice);
   let creditedInvoiceNumber: string | null = null;
   if (invoice.credited_invoice_id != null) {
@@ -42,14 +50,6 @@ export async function generateInvoicePdf(
       /* ignore */
     }
   }
-
-  // Invoices use the classic template with compact typography
-  const base = getTemplateConfig('classic');
-  const configOverride = {
-    compactTypography: true,
-    logoMaxWidth: base.logoMaxWidth * 0.82,
-    logoMaxHeight: base.logoMaxHeight * 0.82,
-  };
 
   const { subtotal, vatRate, vatAmount, total } = computePdfTotals(
     lineItems,
@@ -63,49 +63,81 @@ export async function generateInvoicePdf(
   }
   if (invoice.notes?.trim()) notesParts.push(invoice.notes.trim());
 
-  const curr = invoice.currency || 'ZAR';
-  const safeNum = String(invoice.invoice_number).replace(/[^\w.-]+/g, '-');
-
-  await generateStandardDocumentPdf(
-    {
-      header: {
-        businessName: business?.name || 'Business Name',
-        businessAddress: business?.address,
-        businessPhone: business?.phone,
-        businessVat: business?.vat_number,
-        businessReg: business?.registration_number,
-        documentTitle: isCn ? 'Credit note' : 'Invoice',
-        documentNumber: `#${invoice.invoice_number}`,
-        orderNumber: invoice.order_number,
-        status: invoice.status,
-        statusColors: INVOICE_STATUS_COLORS,
-      },
-      customer: {
-        customerName: invoice.customer_name,
-        customerEmail: invoice.customer_email,
-        customerAddress: invoice.customer_address,
-        customerVat: invoice.customer_vat_number,
-        deliveryAddress: invoice.delivery_address,
-        deliveryConditions: invoice.delivery_conditions,
-      },
-      dates: {
-        issueDate: invoice.issue_date,
-        dueDate: invoice.due_date,
-        terms: invoice.terms,
-      },
-      lineItems: lineItems.map((item) => ({
-        sku: item.sku,
-        description: item.description,
-        quantity: Number(item.quantity),
-        unitPrice: Number(item.unit_price),
-        total: Number(item.total),
-      })),
-      totals: { subtotal, vatRate, vatAmount, total, currency: curr, bankingDetails: business?.banking_details },
-      notes: notesParts.join('\n\n') || undefined,
-      filename: isCn ? `credit-note-${safeNum}.pdf` : `invoice-${safeNum}.pdf`,
-      templateOverride: 'classic',
+  return {
+    header: {
+      businessName: business?.name || 'Business Name',
+      businessAddress: business?.address,
+      businessPhone: business?.phone,
+      businessVat: business?.vat_number,
+      businessReg: business?.registration_number,
+      documentTitle: isCn ? 'Credit note' : 'Invoice',
+      documentNumber: `#${invoice.invoice_number}`,
+      orderNumber: invoice.order_number,
+      status: statusOverride ?? effectiveInvoiceStatus(invoice),
+      statusColors: INVOICE_STATUS_COLORS,
     },
+    customer: {
+      customerName: invoice.customer_name,
+      customerEmail: invoice.customer_email,
+      customerAddress: invoice.customer_address,
+      customerVat: invoice.customer_vat_number,
+      deliveryAddress: invoice.delivery_address,
+      deliveryConditions: invoice.delivery_conditions,
+    },
+    dates: {
+      issueDate: invoice.issue_date,
+      dueDate: invoice.due_date,
+      terms: invoice.terms,
+    },
+    lineItems: lineItems.map((item) => ({
+      sku: item.sku,
+      description: item.description,
+      quantity: Number(item.quantity),
+      unitPrice: Number(item.unit_price),
+      total: Number(item.total),
+    })),
+    totals: { subtotal, vatRate, vatAmount, total, currency: invoice.currency || 'ZAR', bankingDetails: business?.banking_details },
+    notes: notesParts.join('\n\n') || undefined,
+    filename: invoicePdfFilename(invoice),
+    templateOverride: 'classic',
+  };
+}
+
+/** Invoices always use the classic PDF layout (matches the on-screen invoice view). */
+export async function generateInvoicePdf(
+  invoice: Invoice,
+  lineItems: InvoiceItem[] = [],
+  business?: Business | null,
+): Promise<void> {
+  const base = getTemplateConfig('classic');
+  const configOverride = {
+    compactTypography: true,
+    logoMaxWidth: base.logoMaxWidth * 0.82,
+    logoMaxHeight: base.logoMaxHeight * 0.82,
+  };
+  await generateStandardDocumentPdf(
+    await buildInvoicePdfInput(invoice, lineItems, business),
     business,
-    configOverride
+    configOverride,
+  );
+}
+
+/** Browser-generated PDF for the send-invoice email. Drafts render as sent. */
+export async function generateInvoicePdfBlob(
+  invoice: Invoice,
+  lineItems: InvoiceItem[] = [],
+  business?: Business | null,
+  statusOverride: Invoice['status'] = 'sent',
+): Promise<Blob> {
+  const base = getTemplateConfig('classic');
+  const configOverride = {
+    compactTypography: true,
+    logoMaxWidth: base.logoMaxWidth * 0.82,
+    logoMaxHeight: base.logoMaxHeight * 0.82,
+  };
+  return generateStandardDocumentPdfBlob(
+    await buildInvoicePdfInput(invoice, lineItems, business, statusOverride),
+    business,
+    configOverride,
   );
 }

@@ -7,6 +7,7 @@ import { foroApiClient } from '../backend';
 import type { Invoice, CreateInvoiceDto, MarkInvoicePaidDto } from '../types/invoice';
 import { toInvoiceItemApiBody, type InvoiceItemPayload } from './invoiceItemService';
 import { normalizeDocumentKind } from '../utils/invoiceLedger';
+import { effectiveInvoiceStatus } from '../utils/invoiceLifecycle';
 
 const BASE = '/api/v1/invoices';
 
@@ -42,12 +43,18 @@ interface ApiInvoiceRow {
 }
 
 function normalizeInvoice(row: ApiInvoiceRow): Invoice {
+  const documentKind = normalizeDocumentKind(row.documentKind ?? undefined);
+  const status = effectiveInvoiceStatus({
+    status: row.status,
+    due_date: row.dueDate,
+    document_kind: documentKind,
+  });
   return {
     id: row.id,
     business_id: row.businessId,
     company_id: row.companyId,
     project_id: row.projectId,
-    document_kind: normalizeDocumentKind(row.documentKind ?? undefined),
+    document_kind: documentKind,
     credited_invoice_id: row.creditedInvoiceId,
     invoice_number: row.invoiceNumber,
     customer_name: row.customerName,
@@ -60,7 +67,7 @@ function normalizeInvoice(row: ApiInvoiceRow): Invoice {
     terms: row.terms ?? undefined,
     issue_date: row.issueDate,
     due_date: row.dueDate,
-    status: (row.status as Invoice['status']) ?? 'draft',
+    status,
     subtotal: Number(row.subtotal) || 0,
     tax_rate: row.taxRate != null ? Number(row.taxRate) : undefined,
     tax_amount: row.taxAmount != null ? Number(row.taxAmount) : undefined,
@@ -180,7 +187,7 @@ export class InvoiceService {
    * Update an invoice (line items are managed separately via InvoiceItemService)
    */
   static async update(id: number, data: Partial<CreateInvoiceDto>): Promise<{ rowCount: number }> {
-    const { items: _items, ...invoiceRow } = data;
+    const { items: _items, status: _status, ...invoiceRow } = data;
     const response = await foroApiClient.put<ApiInvoiceRow>(`${BASE}/${id}`, toApiBody(invoiceRow));
     return { rowCount: response.data ? 1 : 0 };
   }
@@ -203,6 +210,24 @@ export class InvoiceService {
       reference: data.reference,
     });
     return normalizeInvoice(response.data.invoice);
+  }
+
+  static async send(
+    id: number,
+    data: { pdfBase64: string; filename: string; to?: string; message?: string },
+  ): Promise<{ invoice: Invoice; to: string; sentAt: string; status: string }> {
+    const response = await foroApiClient.post<{
+      invoice: ApiInvoiceRow;
+      to: string;
+      sentAt: string;
+      status: string;
+    }>(`${BASE}/${id}/send`, data);
+    return { ...response.data, invoice: normalizeInvoice(response.data.invoice) };
+  }
+
+  static async cancel(id: number): Promise<Invoice> {
+    const response = await foroApiClient.post<ApiInvoiceRow>(`${BASE}/${id}/cancel`, {});
+    return normalizeInvoice(response.data);
   }
 
   static async findByStatus(status: string): Promise<Invoice[]> {
