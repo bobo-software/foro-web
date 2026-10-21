@@ -5,6 +5,7 @@ import { useBusinessStore } from './BusinessStore';
 import type { Invoice, CreateInvoiceDto, InvoiceItem, MarkInvoicePaidDto } from '../../types/invoice';
 import { computeNextDocumentNumber } from '../../utils/documentNumber';
 import { computeOrderNumber } from '../../utils/orderNumber';
+import { effectiveInvoiceStatus } from '../../utils/invoiceLifecycle';
 
 export type InvoiceLineInput = Omit<InvoiceItem, 'id' | 'invoice_id'> & { item_id?: number };
 
@@ -32,6 +33,22 @@ interface InvoiceState {
     lines: InvoiceLineInput[]
   ) => Promise<void>;
   markInvoicePaid: (invoiceId: number, input: MarkInvoicePaidDto) => Promise<Invoice>;
+  sendInvoiceEmail: (args: {
+    invoice: Invoice;
+    lines: InvoiceItem[];
+    to?: string;
+    message?: string;
+  }) => Promise<{ to: string; invoice: Invoice }>;
+  cancelInvoice: (invoiceId: number) => Promise<Invoice>;
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
+    reader.onerror = () => reject(reader.error ?? new Error('Could not read the PDF'));
+    reader.readAsDataURL(blob);
+  });
 }
 
 export const useInvoiceStore = create<InvoiceState>((set, get) => ({
@@ -115,20 +132,19 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   },
 
   createInvoiceWithLines: async (header, lines) => {
-    const { items: _drop, ...row } = header;
-    const created = await InvoiceService.create(row as CreateInvoiceDto);
+    // One atomic API call: the header and its lines either both persist or neither does.
+    const created = await InvoiceService.createFull(header, lines);
     const newId = created.id;
     if (newId == null) {
       throw new Error('Invoice was created but no id was returned');
     }
-    if (lines.length) await InvoiceItemService.insertMany(newId, lines);
     return newId;
   },
 
   saveInvoiceWithLines: async (invoiceId, header, lines) => {
-    const { items: _drop, ...row } = header;
-    // Replace lines before the header so a draft can leave draft in the same save.
-    // Line writes are rejected once the invoice is no longer a draft.
+    const { items: _drop, status: _status, ...row } = header;
+    // Replace lines before the header. The header save never moves the lifecycle;
+    // the send/cancel/mark-paid actions do that explicitly.
     await InvoiceItemService.deleteByInvoiceId(invoiceId);
     if (lines.length) await InvoiceItemService.insertMany(invoiceId, lines);
     await InvoiceService.update(invoiceId, row);
@@ -136,6 +152,30 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
 
   markInvoicePaid: async (invoiceId, input) => {
     const updated = await InvoiceService.markPaid(invoiceId, input);
+    set((state) => ({
+      invoices: state.invoices.map((row) => (row.id === invoiceId ? { ...row, ...updated } : row)),
+    }));
+    return updated;
+  },
+
+  sendInvoiceEmail: async ({ invoice, lines, to, message }) => {
+    if (invoice.id == null) throw new Error('Save the invoice before sending it');
+    const { generateInvoicePdfBlob, invoicePdfFilename } = await import('../../utils/invoicePdf');
+    const business = useBusinessStore.getState().currentBusiness;
+    const status = effectiveInvoiceStatus(invoice);
+    const pdf = await generateInvoicePdfBlob(invoice, lines, business, status === 'draft' ? 'sent' : status);
+    const result = await InvoiceService.send(invoice.id, {
+      pdfBase64: await blobToBase64(pdf),
+      filename: invoicePdfFilename(invoice),
+      ...(to?.trim() ? { to: to.trim() } : {}),
+      ...(message?.trim() ? { message: message.trim() } : {}),
+    });
+    set({ invoices: get().invoices.map((row) => (row.id === invoice.id ? { ...row, ...result.invoice } : row)) });
+    return { to: result.to, invoice: result.invoice };
+  },
+
+  cancelInvoice: async (invoiceId) => {
+    const updated = await InvoiceService.cancel(invoiceId);
     set((state) => ({
       invoices: state.invoices.map((row) => (row.id === invoiceId ? { ...row, ...updated } : row)),
     }));

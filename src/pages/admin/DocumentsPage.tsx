@@ -7,6 +7,7 @@ const TABS = [
   { label: 'Quotations', path: '/app/documents/quotations', createPath: '/app/quotations/create', createLabel: '+ New Quotation' },
   { label: 'Credit Notes', path: '/app/documents/credit-notes' },
   { label: 'Signing', path: '/app/documents/signing', createPath: '/app/documents/signing/new', createLabel: '+ New Document' },
+  { label: 'Received', path: '/app/documents/received' },
   { label: 'Trash', path: '/app/documents/trash' },
 ] as const;
 

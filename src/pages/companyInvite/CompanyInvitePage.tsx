@@ -9,6 +9,7 @@ import { useBusinessStore } from '@/stores/data/BusinessStore';
 import CompanyInviteService, {
   inviteErrorCode,
   type CompanyInvitePreview,
+  type InviteAccepted,
   type InviteCompanyDetails,
 } from '@/services/companyInviteService';
 import { InviteCompanyDetailsForm } from './InviteCompanyDetailsForm';
@@ -18,7 +19,10 @@ import {
   InviteHeading,
   InviteSteps,
   PRIMARY_BUTTON,
+  RECEIVED_DOCUMENTS_PATH,
   SECONDARY_BUTTON,
+  acceptedLandingPath,
+  documentLabel,
   invalidCopy,
   relationshipLabel,
 } from './companyInviteShared';
@@ -45,7 +49,7 @@ export function CompanyInvitePage() {
   const [step, setStep] = useState<Step>('loading');
   const [preview, setPreview] = useState<CompanyInvitePreview | null>(null);
   const [invalidReason, setInvalidReason] = useState<CompanyInvitePreview['reason'] | 'not-found'>(null);
-  const [linkedCompanyId, setLinkedCompanyId] = useState<number | null>(null);
+  const [accepted, setAccepted] = useState<InviteAccepted | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
@@ -62,6 +66,9 @@ export function CompanyInvitePage() {
       setPreview(result);
       if (result.reason === 'accepted' && result.can_set_password) {
         setStep('password');
+      } else if (result.reason === 'accepted' && result.document && isSignedIn) {
+        // Already linked from an earlier click — the document is in their received documents.
+        navigate(RECEIVED_DOCUMENTS_PATH, { replace: true });
       } else if (!result.valid) {
         setInvalidReason(result.reason);
         setStep('invalid');
@@ -87,7 +94,7 @@ export function CompanyInvitePage() {
     setError(null);
     try {
       const result = await CompanyInviteService.acceptWithDetails(token, details);
-      setLinkedCompanyId(result.linked_company_id);
+      setAccepted(result);
       setStep('password');
     } catch (err) {
       if (inviteErrorCode(err) === 'LOGIN_REQUIRED') {
@@ -118,7 +125,7 @@ export function CompanyInvitePage() {
       await fetchUserBusinesses(Number(sessionUser.id));
       if (businessId) setCurrentBusinessById(businessId);
       toast.success('Your login is ready');
-      navigate(linkedCompanyId ? `/app/companies/${linkedCompanyId}` : '/app/companies', { replace: true });
+      navigate(accepted ? acceptedLandingPath(accepted) : '/app/companies', { replace: true });
     } catch (err) {
       if (inviteErrorCode(err) === 'PASSWORD_ALREADY_SET') {
         setStep('sign-in');
@@ -131,6 +138,7 @@ export function CompanyInvitePage() {
   };
 
   const businessName = preview?.business_name ?? '';
+  const sentDocument = preview?.document ?? null;
 
   if (step === 'loading') {
     return (
@@ -148,7 +156,11 @@ export function CompanyInvitePage() {
           {copy.body}
         </InviteHeading>
         {invalidReason === 'accepted' && (
-          <Link to="/login" state={{ email: preview?.email }} className={`mt-6 w-full ${PRIMARY_BUTTON}`}>
+          <Link
+            to="/login"
+            state={{ email: preview?.email, ...(sentDocument && { from: { pathname: RECEIVED_DOCUMENTS_PATH } }) }}
+            className={`mt-6 w-full ${PRIMARY_BUTTON}`}
+          >
             Sign in
           </Link>
         )}
@@ -162,9 +174,15 @@ export function CompanyInvitePage() {
         <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">
           <LuLogIn className="h-6 w-6" />
         </div>
-        <InviteHeading businessName={businessName} title="Sign in to accept">
+        <InviteHeading
+          businessName={businessName}
+          title={sentDocument ? `Sign in to view ${documentLabel(sentDocument)}` : 'Sign in to accept'}
+        >
           <strong className="text-slate-800 dark:text-slate-200 break-all">{preview?.email}</strong> already has a Foro
-          login. Sign in and we'll link your company with {businessName}.
+          login.{' '}
+          {sentDocument
+            ? `Sign in to see it, along with everything else ${businessName} sends you.`
+            : `Sign in and we'll link your company with ${businessName}.`}
         </InviteHeading>
         <Link
           to="/login"
@@ -185,8 +203,11 @@ export function CompanyInvitePage() {
           <LuCircleCheck className="h-6 w-6" />
         </div>
         <InviteHeading businessName={businessName} title="You're linked">
-          {businessName} now has your company in their list, and you have theirs. Want to see the quotations and invoices
-          they send you? Create a login for{' '}
+          {businessName} now has your company in their list, and you have theirs.{' '}
+          {sentDocument
+            ? `Create a login to view ${documentLabel(sentDocument)} and the other documents they send you`
+            : 'Want to see the quotations and invoices they send you? Create a login'}{' '}
+          for{' '}
           <strong className="text-slate-800 dark:text-slate-200 break-all">{preview?.email}</strong>.
         </InviteHeading>
         <ErrorBanner message={error} />
@@ -239,7 +260,10 @@ export function CompanyInvitePage() {
     return (
       <CompanyInviteShell>
         <InviteSteps current={0} />
-        <InviteHeading businessName={businessName} title={`Link with ${businessName}`}>
+        <InviteHeading
+          businessName={businessName}
+          title={sentDocument ? `${businessName} sent you ${documentLabel(sentDocument)}` : `Link with ${businessName}`}
+        >
           Your company is already on Foro. Confirm to add it to {businessName}'s companies as{' '}
           {relationshipLabel(preview!.company_type)}, and add {businessName} to yours.
         </InviteHeading>
@@ -254,7 +278,11 @@ export function CompanyInvitePage() {
   return (
     <CompanyInviteShell wide>
       <InviteSteps current={0} />
-      <InviteHeading businessName={businessName} title="Add your company details">
+      <InviteHeading
+        businessName={businessName}
+        title={sentDocument ? `${businessName} sent you ${documentLabel(sentDocument)}` : 'Add your company details'}
+      >
+        {sentDocument && 'Add your company details to view it on Foro. '}
         {businessName} would like to add your company as {relationshipLabel(preview!.company_type)}. Enter your details
         once and you'll appear in each other's company lists — no account needed.
       </InviteHeading>
@@ -265,7 +293,7 @@ export function CompanyInvitePage() {
         </li>
         <li className="flex items-start gap-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
           <LuFileText className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
-          Optionally sign in to see their quotations and invoices.
+          Optionally sign in to see their quotations, invoices and signed documents.
         </li>
       </ul>
       <ErrorBanner message={error} />

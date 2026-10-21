@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { LuCheck } from 'react-icons/lu';
 import { ThemeToggleButton } from '@/components/elements/ThemeToggleButton';
-import type { CompanyInvitePreview } from '@/services/companyInviteService';
+import type { CompanyInvitePreview, InviteAccepted } from '@/services/companyInviteService';
 
 export const PRIMARY_BUTTON =
   'inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white no-underline hover:bg-indigo-500 transition shadow-sm shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed';
@@ -82,6 +82,25 @@ export function ErrorBanner({ message }: { message: string | null }) {
       {message}
     </div>
   );
+}
+
+export const RECEIVED_DOCUMENTS_PATH = '/app/documents/received';
+
+/** Where to land after accepting: the emailed document, else the sender's company page. */
+export function acceptedLandingPath(result: Pick<InviteAccepted, 'linked_company_id' | 'document'>): string {
+  if (!result.document) return `/app/companies/${result.linked_company_id}`;
+  const kind =
+    result.document.type === 'signing'
+      ? 'signing-documents'
+      : result.document.type === 'quotation'
+        ? 'quotations'
+        : 'invoices';
+  return `/app/companies/${result.linked_company_id}/received/${kind}/${result.document.id}`;
+}
+
+export function documentLabel(document: NonNullable<CompanyInvitePreview['document']>): string {
+  if (document.type === 'signing') return `the signed document "${document.number}"`;
+  return `${document.type === 'quotation' ? 'quotation' : 'invoice'} ${document.number}`;
 }
 
 export function relationshipLabel(type: CompanyInvitePreview['company_type']): string {

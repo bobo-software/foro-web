@@ -8,6 +8,7 @@ import { useBusinessStore } from '@/stores/data/BusinessStore';
 import CompanyInviteService, {
   inviteErrorCode,
   type CompanyInvitePreview,
+  type InviteAccepted,
   type InviteCompanyDetails,
 } from '@/services/companyInviteService';
 import { InviteCompanyDetailsForm } from './InviteCompanyDetailsForm';
@@ -17,7 +18,9 @@ import {
   InviteHeading,
   InviteSteps,
   PRIMARY_BUTTON,
+  RECEIVED_DOCUMENTS_PATH,
   SECONDARY_BUTTON,
+  acceptedLandingPath,
   invalidCopy,
   relationshipLabel,
 } from './companyInviteShared';
@@ -45,11 +48,11 @@ export function CompanyInvitePostAuth() {
   const [submitting, setSubmitting] = useState(false);
 
   const finish = useCallback(
-    async (result: { business_id: number; linked_company_id: number }) => {
+    async (result: InviteAccepted) => {
       if (sessionUser) await fetchUserBusinesses(Number(sessionUser.id));
       setCurrentBusinessById(result.business_id);
-      toast.success('Companies linked');
-      navigate(`/app/companies/${result.linked_company_id}`, { replace: true });
+      if (!result.document) toast.success('Companies linked');
+      navigate(acceptedLandingPath(result), { replace: true });
     },
     [fetchUserBusinesses, navigate, sessionUser, setCurrentBusinessById],
   );
@@ -103,6 +106,10 @@ export function CompanyInvitePostAuth() {
       try {
         const result = await CompanyInviteService.preview(token);
         setPreview(result);
+        if (result.reason === 'accepted' && result.document) {
+          navigate(RECEIVED_DOCUMENTS_PATH, { replace: true });
+          return;
+        }
         if (!result.valid) {
           setError(invalidCopy(result.reason).body);
           setStep('error');

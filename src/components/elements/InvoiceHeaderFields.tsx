@@ -1,15 +1,7 @@
 import AppInputLabeled from '../forms/AppLabledInput';
 import AppLabeledSelectInput from '../forms/AppLabledSelectInput';
-import type { CreateInvoiceDto, InvoiceStatus } from '../../types/invoice';
+import type { CreateInvoiceDto } from '../../types/invoice';
 import { SUPPORTED_CURRENCIES } from '../../utils/currency';
-
-const INVOICE_STATUSES: { value: InvoiceStatus; label: string }[] = [
-  { value: 'draft', label: 'Draft' },
-  { value: 'accepted', label: 'Accepted' },
-  { value: 'sent', label: 'Sent' },
-  { value: 'overdue', label: 'Overdue' },
-  { value: 'cancelled', label: 'Cancelled' },
-];
 
 const TERMS_OPTIONS = [
   { value: 'C.O.D', label: 'C.O.D (Cash on Delivery)' },
@@ -27,7 +19,7 @@ const DELIVERY_OPTIONS = [
 
 interface InvoiceHeaderFieldsProps {
   isCreditNote: boolean;
-  formData: Pick<CreateInvoiceDto, 'invoice_number' | 'order_number' | 'status' | 'currency' | 'issue_date' | 'due_date' | 'terms' | 'delivery_conditions'>;
+  formData: Pick<CreateInvoiceDto, 'invoice_number' | 'order_number' | 'currency' | 'issue_date' | 'due_date' | 'terms' | 'delivery_conditions'>;
   onChange: (field: keyof CreateInvoiceDto, value: unknown) => void;
 }
 
@@ -47,12 +39,6 @@ export function InvoiceHeaderFields({ isCreditNote, formData, onChange }: Invoic
         value={formData.order_number || ''}
         onChange={(e) => onChange('order_number', e.target.value)}
         placeholder="PO number"
-      />
-      <AppLabeledSelectInput
-        label="Status"
-        value={formData.status}
-        onChange={(e) => onChange('status', e.target.value as InvoiceStatus)}
-        options={INVOICE_STATUSES}
       />
       <AppLabeledSelectInput
         label="Currency"

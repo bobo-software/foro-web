@@ -28,7 +28,64 @@ interface IssuerBranding {
   bankingDetails: BankingDetails | null;
 }
 
+export type ReceivedDocumentKind = 'quotation' | 'invoice' | 'signing';
+
+/** One row of `GET /api/v1/received-documents` — documents from every linked sender. */
+export interface ReceivedDocumentSummary {
+  kind: ReceivedDocumentKind;
+  id: number;
+  number: string;
+  /** Signing documents have a title instead of a number. */
+  title?: string;
+  issueDate: string;
+  /** Invoice due date or quotation valid-until date. */
+  dueDate: string | null;
+  status: string;
+  total: string;
+  currency: string;
+  /** The current business's company row for the sender (`:id` in the per-company routes). */
+  companyId: number;
+  senderName: string;
+}
+
+/** A signed document a linked business sent the current business (camelCase API row). */
+export interface ReceivedSigningDocumentRow {
+  id: number;
+  title: string;
+  status: string;
+  recipientName: string | null;
+  recipientSignedName: string | null;
+  recipientSignatureDate: string | null;
+  recipientSignedAt: string | null;
+  senderSignedName: string | null;
+  senderSignatureDate: string | null;
+  createdAt: string | null;
+}
+
+export interface ReceivedSigningDocumentDetail {
+  document: ReceivedSigningDocumentRow & { bodyHtml: string };
+  companyName: string;
+  business: {
+    name: string;
+    address: string | null;
+    phone: string | null;
+    vatNumber: string | null;
+    registrationNumber: string | null;
+  } | null;
+  senderSignatureUrl: string | null;
+  recipientSignatureUrl: string | null;
+  logoDownloadUrl: string | null;
+}
+
 export class ReceivedDocumentsService {
+  static async listAll(businessId: number, kind?: ReceivedDocumentKind): Promise<ReceivedDocumentSummary[]> {
+    const res = await foroApiClient.get<ReceivedDocumentSummary[]>('/api/v1/received-documents', {
+      businessId,
+      ...(kind ? { type: kind } : {}),
+    });
+    return res.data ?? [];
+  }
+
   static async listInvoices(companyId: number): Promise<Invoice[]> {
     const res = await foroApiClient.get<ApiInvoiceRow[]>(`${base(companyId)}/invoices`);
     return (res.data ?? []).map(normalizeInvoice);
@@ -71,6 +128,18 @@ export class ReceivedDocumentsService {
       business: normalizeBusiness(res.data.business),
       bankingDetails: normalizeBankingDetails(res.data.business?.bankingDetails),
     };
+  }
+
+  static async listSigningDocuments(companyId: number): Promise<ReceivedSigningDocumentRow[]> {
+    const res = await foroApiClient.get<ReceivedSigningDocumentRow[]>(`${base(companyId)}/signing-documents`);
+    return res.data ?? [];
+  }
+
+  static async getSigningDocument(companyId: number, documentId: number): Promise<ReceivedSigningDocumentDetail> {
+    const res = await foroApiClient.get<ReceivedSigningDocumentDetail>(
+      `${base(companyId)}/signing-documents/${documentId}`,
+    );
+    return res.data;
   }
 }
 

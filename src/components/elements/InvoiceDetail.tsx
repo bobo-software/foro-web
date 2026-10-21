@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { LuPrinter, LuArrowLeft } from 'react-icons/lu';
 import { MarkInvoicePaidModal } from '../modals/MarkInvoicePaidModal';
+import { SendInvoiceEmailModal } from '../modals/SendInvoiceEmailModal';
 import type { Invoice, InvoiceItem } from '../../types/invoice';
 import { ACCOUNT_TYPES } from '../../types/bankingDetails';
 import StorageService from '../../services/storageService';
@@ -11,6 +12,12 @@ import { useInvoiceStore } from '../../stores/data/InvoiceStore';
 import { useBusinessDocumentContextStore } from '../../stores/data/BusinessDocumentContextStore';
 import { isCreditNoteInvoice } from '../../utils/invoiceLedger';
 import { formatTrashPurgeDate, isTrashed } from '../../utils/salesTrash';
+import {
+  canCancelInvoice,
+  canMarkInvoicePaid,
+  canSendInvoice,
+  effectiveInvoiceStatus,
+} from '../../utils/invoiceLifecycle';
 import InvoiceService from '../../services/invoiceService';
 
 interface InvoiceDetailProps {
@@ -35,6 +42,8 @@ export function InvoiceDetail({ invoiceId, fromCompanyId, onEdit, onDelete }: In
   const [creditedInvoiceLabel, setCreditedInvoiceLabel] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
+  const [sendOpen, setSendOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     loadInvoice();
@@ -121,6 +130,21 @@ export function InvoiceDetail({ invoiceId, fromCompanyId, onEdit, onDelete }: In
     }
   };
 
+  const handleCancel = async () => {
+    if (!invoice) return;
+    const noun = isCreditNoteInvoice(invoice) ? 'credit note' : 'invoice';
+    if (!confirm(`Cancel this ${noun}? A cancelled ${noun} cannot be edited, paid, or sent again.`)) return;
+    try {
+      setCancelling(true);
+      const updated = await useInvoiceStore.getState().cancelInvoice(invoiceId);
+      setInvoice(updated);
+    } catch (err: unknown) {
+      alert(`Failed to cancel ${noun}: ` + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -132,7 +156,6 @@ export function InvoiceDetail({ invoiceId, fromCompanyId, onEdit, onDelete }: In
   const getStatusBadgeClass = (status: string) => {
     const statusMap: Record<string, string> = {
       draft: 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300',
-      accepted: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
       sent: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
       paid: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300',
       overdue: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300',
@@ -172,9 +195,13 @@ export function InvoiceDetail({ invoiceId, fromCompanyId, onEdit, onDelete }: In
 
   const isCn = isCreditNoteInvoice(invoice);
   const inTrash = isTrashed(invoice.deleted_at);
-  const canEdit = invoice.status === 'draft';
-  const canMarkPaid = !isCn && !inTrash && invoice.status !== 'paid' && invoice.status !== 'cancelled';
+  const status = effectiveInvoiceStatus(invoice);
+  const canEdit = status === 'draft';
+  const canMarkPaid = !inTrash && canMarkInvoicePaid(invoice);
+  const canSend = !inTrash && canSendInvoice(invoice);
+  const canCancel = !inTrash && canCancelInvoice(invoice);
   const hasNotes = !!invoice.notes || (!!creditedInvoiceLabel && isCn);
+  const documentNoun = isCn ? 'credit note' : 'invoice';
 
   const creditNoteCreateSearch = new URLSearchParams();
   creditNoteCreateSearch.set('credit_from', String(invoiceId));
@@ -196,8 +223,8 @@ export function InvoiceDetail({ invoiceId, fromCompanyId, onEdit, onDelete }: In
               Relates to invoice #{creditedInvoiceLabel}
             </p>
           )}
-          <span className={`inline-block px-3 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusBadgeClass(invoice.status)}`}>
-            {invoice.status}
+          <span className={`inline-block px-3 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusBadgeClass(status)}`}>
+            {status}
           </span>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
@@ -220,6 +247,15 @@ export function InvoiceDetail({ invoiceId, fromCompanyId, onEdit, onDelete }: In
             </button>
           ) : (
             <>
+              {canSend && (
+                <button
+                  type="button"
+                  onClick={() => setSendOpen(true)}
+                  className="inline-flex items-center h-[34px] px-3 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 transition-colors"
+                >
+                  {status === 'draft' ? `Send ${documentNoun}` : `Resend ${documentNoun}`}
+                </button>
+              )}
               {canMarkPaid && (
                 <button
                   type="button"
@@ -246,6 +282,16 @@ export function InvoiceDetail({ invoiceId, fromCompanyId, onEdit, onDelete }: In
               )}
               {onEdit && canEdit && (
                 <button onClick={onEdit} className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 transition-colors">Edit</button>
+              )}
+              {canCancel && (
+                <button
+                  type="button"
+                  onClick={() => void handleCancel()}
+                  disabled={cancelling}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-amber-900 dark:text-amber-100 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60 disabled:opacity-50 transition-colors"
+                >
+                  {cancelling ? 'Cancelling…' : 'Cancel ' + documentNoun}
+                </button>
               )}
               {onDelete && (
                 <button onClick={handleDelete} className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors">Delete</button>
@@ -294,8 +340,8 @@ export function InvoiceDetail({ invoiceId, fromCompanyId, onEdit, onDelete }: In
             {invoice.order_number && (
               <p className="text-xs text-gray-500 dark:text-gray-400">Order: {invoice.order_number}</p>
             )}
-            <span className={`mt-1 inline-block px-2 py-0.5 rounded text-xs font-semibold uppercase ${getStatusBadgeClass(invoice.status)}`}>
-              {invoice.status}
+            <span className={`mt-1 inline-block px-2 py-0.5 rounded text-xs font-semibold uppercase ${getStatusBadgeClass(status)}`}>
+              {status}
             </span>
           </div>
         </div>
@@ -450,6 +496,19 @@ export function InvoiceDetail({ invoiceId, fromCompanyId, onEdit, onDelete }: In
           <p className="text-xs text-gray-300 dark:text-gray-600">Foro by Bobo Softwares (2026)</p>
         </div>
       </div>
+
+      {canSend && (
+        <SendInvoiceEmailModal
+          invoice={invoice}
+          lines={lineItems}
+          isOpen={sendOpen}
+          onClose={() => setSendOpen(false)}
+          onSent={(updated) => {
+            setInvoice(updated);
+            setSendOpen(false);
+          }}
+        />
+      )}
 
       {canMarkPaid && (
         <MarkInvoicePaidModal

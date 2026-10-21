@@ -34,6 +34,7 @@ type TabId =
   | 'statements'
   | 'received-quotations'
   | 'received-invoices'
+  | 'received-signing-documents'
   | 'edit';
 
 export function CompanyDetailPage() {
@@ -162,6 +163,7 @@ export function CompanyDetailPage() {
         ? [
             { id: 'received-quotations' as TabId, label: 'Received quotations' },
             { id: 'received-invoices' as TabId, label: 'Received invoices' },
+            { id: 'received-signing-documents' as TabId, label: 'Received documents' },
           ]
         : []),
       { id: 'edit' as TabId, label: 'Edit' },
@@ -273,6 +275,9 @@ export function CompanyDetailPage() {
       {activeTab === 'statements' && <CompanyStatementsTab {...tabProps} />}
       {activeTab === 'received-quotations' && <CompanyReceivedTab company={company} kind="quotations" />}
       {activeTab === 'received-invoices' && <CompanyReceivedTab company={company} kind="invoices" />}
+      {activeTab === 'received-signing-documents' && (
+        <CompanyReceivedTab company={company} kind="signing-documents" />
+      )}
       {activeTab === 'edit' && <CompanyEditTab company={company} onCompanyUpdate={handleCompanyUpdate} />}
     </div>
   );

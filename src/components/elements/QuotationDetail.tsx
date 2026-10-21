@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { LuCopy, LuPrinter, LuFileText } from 'react-icons/lu';
+import { LuCopy, LuPrinter, LuFileText, LuMail } from 'react-icons/lu';
 import ConverInvoiceModal from '../modals/ConverInvoiceModal';
+import { SendQuotationEmailModal } from '../modals/SendQuotationEmailModal';
 import type { Quotation, QuotationLine, CreateQuotationDto } from '../../types/quotation';
-import type { CreateInvoiceDto, InvoiceStatus } from '../../types/invoice';
+import type { CreateInvoiceDto } from '../../types/invoice';
 import type { Project } from '../../types/project';
 import { ACCOUNT_TYPES } from '../../types/bankingDetails';
 import StorageService from '../../services/storageService';
@@ -35,6 +36,7 @@ export function QuotationDetail({ quotationId, onEdit, onDelete }: QuotationDeta
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [duplicating, setDuplicating] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [sendModalOpen, setSendModalOpen] = useState(false);
   const convertInFlightRef = useRef(false);
 
   useEffect(() => {
@@ -165,7 +167,7 @@ export function QuotationDetail({ quotationId, onEdit, onDelete }: QuotationDeta
     }
   }, [quotation, lineItems, navigate, fromCompany]);
 
-  const handleConvertToInvoice = useCallback(async (chosenStatus: InvoiceStatus = 'accepted') => {
+  const handleConvertToInvoice = useCallback(async () => {
     if (convertInFlightRef.current) return;
     if (!quotation) return;
     if (quotation.converted_invoice_id != null) {
@@ -203,7 +205,7 @@ export function QuotationDetail({ quotationId, onEdit, onDelete }: QuotationDeta
         terms: quotation.terms ?? 'C.O.D',
         issue_date: issueDate,
         due_date: dueDate,
-        status: chosenStatus,
+        status: 'draft',
         subtotal: Number(quotation.subtotal) || 0,
         tax_rate: quotation.tax_rate,
         tax_amount: quotation.tax_amount,
@@ -330,6 +332,14 @@ export function QuotationDetail({ quotationId, onEdit, onDelete }: QuotationDeta
               <button type="button" onClick={handlePrint}
                 className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-lg text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 transition-colors">
                 <LuPrinter size={15} aria-hidden />Print / Save PDF
+              </button>
+              <button
+                type="button"
+                onClick={() => setSendModalOpen(true)}
+                className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-lg text-sm font-medium text-white bg-sky-600 hover:bg-sky-700 transition-colors"
+              >
+                <LuMail size={15} aria-hidden />
+                {quotation.status === 'draft' ? 'Send by email' : 'Resend'}
               </button>
               <button
                 type="button"
@@ -571,6 +581,17 @@ export function QuotationDetail({ quotationId, onEdit, onDelete }: QuotationDeta
         vatAmount={vatAmount}
         total={total}
         currency={quotation.currency}
+      />
+
+      <SendQuotationEmailModal
+        quotation={quotation}
+        lines={lineItems}
+        isOpen={sendModalOpen}
+        onClose={() => setSendModalOpen(false)}
+        onSent={(sent) => {
+          setQuotation((prev) => (prev ? { ...prev, status: sent.status } : prev));
+          setSendModalOpen(false);
+        }}
       />
     </div>
   );

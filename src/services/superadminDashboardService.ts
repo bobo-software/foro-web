@@ -1,5 +1,6 @@
 import { foroApiClient } from '../backend';
 import type { Invoice, InvoiceStatus } from '../types/invoice';
+import { effectiveInvoiceStatus } from '../utils/invoiceLifecycle';
 
 const BASE = '/api/v1/superadmin/dashboard';
 
@@ -46,17 +47,22 @@ export interface ApplicationDashboard {
 }
 
 function toInvoice(row: ApiRecentInvoice): Invoice {
+  const documentKind = row.documentKind === 'credit_note' ? 'credit_note' : 'invoice';
   return {
     id: row.id,
     invoice_number: row.invoiceNumber,
     customer_name: row.customerName,
     issue_date: row.issueDate,
     due_date: row.dueDate,
-    status: row.status as InvoiceStatus,
+    status: effectiveInvoiceStatus({
+      status: row.status,
+      due_date: row.dueDate,
+      document_kind: documentKind,
+    }),
     subtotal: row.total,
     total: row.total,
     currency: row.currency,
-    document_kind: row.documentKind === 'credit_note' ? 'credit_note' : 'invoice',
+    document_kind: documentKind,
   };
 }
 

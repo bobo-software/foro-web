@@ -47,6 +47,7 @@ const ItemFormPage = lazy(() => import('@pages/admin/ItemFormPage').then((m) => 
 const DocumentsPage = lazy(() => import('@pages/admin/DocumentsPage').then((m) => ({ default: m.DocumentsPage })));
 const InvoiceList = lazy(() => import('@/components/elements/InvoiceList').then((m) => ({ default: m.InvoiceList })));
 const QuotationList = lazy(() => import('@/components/elements/QuotationList').then((m) => ({ default: m.QuotationList })));
+const ReceivedDocumentsTab = lazy(() => import('@pages/admin/documents/ReceivedDocumentsTab').then((m) => ({ default: m.ReceivedDocumentsTab })));
 const DocumentsTrashPage = lazy(() => import('@pages/admin/DocumentsTrashPage').then((m) => ({ default: m.DocumentsTrashPage })));
 const SigningDocumentList = lazy(() => import('@pages/admin/signing/SigningDocumentList').then((m) => ({ default: m.SigningDocumentList })));
 const SigningDocumentFormPage = lazy(() => import('@pages/admin/signing/SigningDocumentFormPage').then((m) => ({ default: m.SigningDocumentFormPage })));
@@ -246,6 +247,7 @@ function App() {
                 <Route path="quotations" element={<QuotationList />} />
                 <Route path="credit-notes" element={<InvoiceList documentKind="credit_note" />} />
                 <Route path="signing" element={<SigningDocumentList />} />
+                <Route path="received" element={<ReceivedDocumentsTab />} />
                 <Route path="trash" element={<DocumentsTrashPage />} />
               </Route>
               <Route path="documents/signing/new" element={<SigningDocumentFormPage />} />

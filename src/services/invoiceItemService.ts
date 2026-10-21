@@ -7,6 +7,22 @@ import type { InvoiceItem } from '../types/invoice';
 
 const BASE = '/api/v1/invoice-items';
 
+export type InvoiceItemPayload = Omit<InvoiceItem, 'id' | 'invoice_id'> & { item_id?: number };
+
+/** Maps a local line item to the camelCase API body used by POST /invoice-items and /invoices/full. */
+export function toInvoiceItemApiBody(item: InvoiceItemPayload): Record<string, unknown> {
+  return {
+    ...(item.item_id != null && { itemId: item.item_id }),
+    ...(item.sku != null && { sku: item.sku }),
+    description: item.description,
+    quantity: item.quantity,
+    unitPrice: Number(item.unit_price),
+    unitType: item.unit_type ?? 'qty',
+    discountPercent: Number(item.discount_percent) || 0,
+    total: Number(item.total),
+  };
+}
+
 interface ApiInvoiceItemRow {
   id: number;
   invoiceId: number;
@@ -41,23 +57,9 @@ export class InvoiceItemService {
     return (response.data ?? []).map(fromApi);
   }
 
-  static async insertMany(
-    invoiceId: number,
-    items: (Omit<InvoiceItem, 'id' | 'invoice_id'> & { item_id?: number })[]
-  ): Promise<void> {
+  static async insertMany(invoiceId: number, items: InvoiceItemPayload[]): Promise<void> {
     for (const item of items) {
-      const body: Record<string, unknown> = {
-        invoiceId,
-        ...(item.item_id != null && { itemId: item.item_id }),
-        ...(item.sku != null && { sku: item.sku }),
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: Number(item.unit_price),
-        unitType: item.unit_type ?? 'qty',
-        discountPercent: Number(item.discount_percent) || 0,
-        total: Number(item.total),
-      };
-      await foroApiClient.post(BASE, body);
+      await foroApiClient.post(BASE, { invoiceId, ...toInvoiceItemApiBody(item) });
     }
   }
 

@@ -6,11 +6,12 @@ import { formatCurrency } from '@/utils/currency';
 import type { Company } from '@/types/company';
 import { formatDate } from './types';
 
-export type ReceivedKind = 'invoices' | 'quotations';
+export type ReceivedKind = 'invoices' | 'quotations' | 'signing-documents';
 
 interface ReceivedRow {
   id: number;
   number: string;
+  title?: string;
   issueDate: string;
   dueOrValid?: string;
   status: string;
@@ -45,17 +46,28 @@ export function CompanyReceivedTab({ company, kind }: { company: Company; kind: 
               currency: inv.currency,
             })),
           )
-        : ReceivedDocumentsService.listQuotations(company.id!).then((list) =>
-            list.map((q) => ({
-              id: q.id!,
-              number: q.quotation_number,
-              issueDate: q.issue_date,
-              dueOrValid: q.valid_until,
-              status: q.status,
-              total: q.total,
-              currency: q.currency,
-            })),
-          );
+        : kind === 'quotations'
+          ? ReceivedDocumentsService.listQuotations(company.id!).then((list) =>
+              list.map((q) => ({
+                id: q.id!,
+                number: q.quotation_number,
+                issueDate: q.issue_date,
+                dueOrValid: q.valid_until,
+                status: q.status,
+                total: q.total,
+                currency: q.currency,
+              })),
+            )
+          : ReceivedDocumentsService.listSigningDocuments(company.id!).then((list) =>
+              list.map((doc) => ({
+                id: doc.id,
+                number: '',
+                title: doc.title,
+                issueDate: (doc.recipientSignedAt ?? doc.createdAt ?? '').slice(0, 10),
+                status: doc.status,
+                total: 0,
+              })),
+            );
     load
       .then((data) => {
         if (!cancelled) setRows(data);
@@ -75,9 +87,9 @@ export function CompanyReceivedTab({ company, kind }: { company: Company; kind: 
     () => [
       {
         id: 'number',
-        header: kind === 'invoices' ? 'Invoice' : 'Quotation',
+        header: kind === 'invoices' ? 'Invoice' : kind === 'quotations' ? 'Quotation' : 'Document',
         cellClassName: 'font-medium text-slate-800 dark:text-slate-100',
-        render: (row) => row.number || '—',
+        render: (row) => row.title ?? row.number ?? '—',
       },
       {
         id: 'issue_date',
@@ -101,13 +113,20 @@ export function CompanyReceivedTab({ company, kind }: { company: Company; kind: 
         header: 'Total',
         align: 'right',
         cellClassName: 'font-medium text-slate-800 dark:text-slate-100',
-        render: (row) => formatCurrency(Number(row.total), row.currency),
+        render: (row) => (kind === 'signing-documents' ? '—' : formatCurrency(Number(row.total), row.currency)),
       },
     ],
     [kind],
   );
 
-  const noun = kind === 'invoices' ? 'invoices' : 'quotations';
+  const noun =
+    kind === 'invoices' ? 'invoices' : kind === 'quotations' ? 'quotations' : 'signed documents';
+  const description =
+    kind === 'invoices'
+      ? 'Invoices and credit notes'
+      : kind === 'quotations'
+        ? 'Quotations'
+        : 'Documents you signed';
 
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
@@ -116,8 +135,7 @@ export function CompanyReceivedTab({ company, kind }: { company: Company; kind: 
           Received {noun} ({rows.length})
         </h2>
         <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-          {kind === 'invoices' ? 'Invoices and credit notes' : 'Quotations'} {company.name} has sent you on Foro.
-          Read-only.
+          {description} {company.name} has sent you on Foro. Read-only.
         </p>
       </div>
       <AppDataTable<ReceivedRow>

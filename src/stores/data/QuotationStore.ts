@@ -26,6 +26,22 @@ interface QuotationState {
   getNextQuotationNumber: () => Promise<string>;
   peekNextOrderNumber: (companyId: number, companyName: string, issueDate: string) => Promise<string>;
   markQuotationConverted: (quotationId: number, invoiceId: number) => Promise<void>;
+  /** Builds the PDF, emails it with a link to the recipient's received documents, and returns the updated quotation. */
+  sendQuotationEmail: (args: {
+    quotation: Quotation;
+    lines: QuotationLine[];
+    to?: string;
+    message?: string;
+  }) => Promise<{ to: string; quotation: Quotation }>;
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
+    reader.onerror = () => reject(reader.error ?? new Error('Could not read the PDF'));
+    reader.readAsDataURL(blob);
+  });
 }
 
 export const useQuotationStore = create<QuotationState>((set, get) => ({
@@ -134,5 +150,20 @@ export const useQuotationStore = create<QuotationState>((set, get) => ({
           : q
       ),
     });
+  },
+
+  sendQuotationEmail: async ({ quotation, lines, to, message }) => {
+    if (quotation.id == null) throw new Error('Save the quotation before sending it');
+    const { generateQuotationPdfBlob, quotationPdfFilename } = await import('../../utils/quotationPdf');
+    const business = useBusinessStore.getState().currentBusiness;
+    const pdf = await generateQuotationPdfBlob(quotation, lines, business);
+    const result = await QuotationService.send(quotation.id, {
+      pdfBase64: await blobToBase64(pdf),
+      filename: quotationPdfFilename(quotation),
+      ...(to?.trim() ? { to: to.trim() } : {}),
+      ...(message?.trim() ? { message: message.trim() } : {}),
+    });
+    set({ quotations: get().quotations.map((q) => (q.id === quotation.id ? { ...q, ...result.quotation } : q)) });
+    return { to: result.to, quotation: result.quotation };
   },
 }));
