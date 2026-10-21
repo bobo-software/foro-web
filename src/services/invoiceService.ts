@@ -5,6 +5,7 @@
 
 import { foroApiClient } from '../backend';
 import type { Invoice, CreateInvoiceDto, MarkInvoicePaidDto } from '../types/invoice';
+import { toInvoiceItemApiBody, type InvoiceItemPayload } from './invoiceItemService';
 import { normalizeDocumentKind } from '../utils/invoiceLedger';
 
 const BASE = '/api/v1/invoices';
@@ -156,6 +157,23 @@ export class InvoiceService {
     const { items: _items, ...invoiceRow } = data;
     const response = await foroApiClient.post<ApiInvoiceRow>(BASE, toApiBody(invoiceRow));
     return normalizeInvoice(response.data);
+  }
+
+  /**
+   * Create a new invoice and all of its lines in one request.
+   * The API writes both in a single transaction, so a bad line cannot leave an
+   * orphan header behind or consume a document number.
+   */
+  static async createFull(data: CreateInvoiceDto, lines: InvoiceItemPayload[]): Promise<Invoice> {
+    const { items: _items, ...invoiceRow } = data;
+    const response = await foroApiClient.post<{ invoice: ApiInvoiceRow; lines: unknown[] }>(
+      `${BASE}/full`,
+      {
+        invoice: toApiBody(invoiceRow),
+        lines: lines.map(toInvoiceItemApiBody),
+      }
+    );
+    return normalizeInvoice(response.data.invoice);
   }
 
   /**

@@ -27,11 +27,18 @@ const DELIVERY_OPTIONS = [
 
 interface InvoiceHeaderFieldsProps {
   isCreditNote: boolean;
+  /** New documents always start as drafts; status only becomes editable once the document exists. */
+  showStatus?: boolean;
   formData: Pick<CreateInvoiceDto, 'invoice_number' | 'order_number' | 'status' | 'currency' | 'issue_date' | 'due_date' | 'terms' | 'delivery_conditions'>;
   onChange: (field: keyof CreateInvoiceDto, value: unknown) => void;
 }
 
-export function InvoiceHeaderFields({ isCreditNote, formData, onChange }: InvoiceHeaderFieldsProps) {
+export function InvoiceHeaderFields({
+  isCreditNote,
+  showStatus = true,
+  formData,
+  onChange,
+}: InvoiceHeaderFieldsProps) {
   return (
     <div className="grid grid-cols-1 gap-x-4 gap-y-2 mb-2 md:grid-cols-4">
       <AppInputLabeled
@@ -48,12 +55,14 @@ export function InvoiceHeaderFields({ isCreditNote, formData, onChange }: Invoic
         onChange={(e) => onChange('order_number', e.target.value)}
         placeholder="PO number"
       />
-      <AppLabeledSelectInput
-        label="Status"
-        value={formData.status}
-        onChange={(e) => onChange('status', e.target.value as InvoiceStatus)}
-        options={INVOICE_STATUSES}
-      />
+      {showStatus && (
+        <AppLabeledSelectInput
+          label="Status"
+          value={formData.status}
+          onChange={(e) => onChange('status', e.target.value as InvoiceStatus)}
+          options={INVOICE_STATUSES}
+        />
+      )}
       <AppLabeledSelectInput
         label="Currency"
         value={formData.currency || 'ZAR'}

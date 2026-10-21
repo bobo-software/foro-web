@@ -720,6 +720,7 @@ export function InvoiceForm({
       >
         <InvoiceHeaderFields
           isCreditNote={isCreditNote}
+          showStatus={Boolean(invoiceId)}
           formData={formData}
           onChange={handleChange}
         />

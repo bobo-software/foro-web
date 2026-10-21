@@ -115,13 +115,12 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   },
 
   createInvoiceWithLines: async (header, lines) => {
-    const { items: _drop, ...row } = header;
-    const created = await InvoiceService.create(row as CreateInvoiceDto);
+    // One atomic API call: the header and its lines either both persist or neither does.
+    const created = await InvoiceService.createFull(header, lines);
     const newId = created.id;
     if (newId == null) {
       throw new Error('Invoice was created but no id was returned');
     }
-    if (lines.length) await InvoiceItemService.insertMany(newId, lines);
     return newId;
   },
 

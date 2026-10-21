@@ -4,7 +4,7 @@ import { LuCopy, LuPrinter, LuFileText, LuMail } from 'react-icons/lu';
 import ConverInvoiceModal from '../modals/ConverInvoiceModal';
 import { SendQuotationEmailModal } from '../modals/SendQuotationEmailModal';
 import type { Quotation, QuotationLine, CreateQuotationDto } from '../../types/quotation';
-import type { CreateInvoiceDto, InvoiceStatus } from '../../types/invoice';
+import type { CreateInvoiceDto } from '../../types/invoice';
 import type { Project } from '../../types/project';
 import { ACCOUNT_TYPES } from '../../types/bankingDetails';
 import StorageService from '../../services/storageService';
@@ -167,7 +167,7 @@ export function QuotationDetail({ quotationId, onEdit, onDelete }: QuotationDeta
     }
   }, [quotation, lineItems, navigate, fromCompany]);
 
-  const handleConvertToInvoice = useCallback(async (chosenStatus: InvoiceStatus = 'accepted') => {
+  const handleConvertToInvoice = useCallback(async () => {
     if (convertInFlightRef.current) return;
     if (!quotation) return;
     if (quotation.converted_invoice_id != null) {
@@ -205,7 +205,7 @@ export function QuotationDetail({ quotationId, onEdit, onDelete }: QuotationDeta
         terms: quotation.terms ?? 'C.O.D',
         issue_date: issueDate,
         due_date: dueDate,
-        status: chosenStatus,
+        status: 'draft',
         subtotal: Number(quotation.subtotal) || 0,
         tax_rate: quotation.tax_rate,
         tax_amount: quotation.tax_amount,
