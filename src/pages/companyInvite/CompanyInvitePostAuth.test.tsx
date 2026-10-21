@@ -106,6 +106,9 @@ describe('acceptedLandingPath', () => {
     expect(acceptedLandingPath({ linked_company_id: 85, document: { type: 'invoice', id: 9 } })).toBe(
       '/app/companies/85/received/invoices/9',
     );
+    expect(acceptedLandingPath({ linked_company_id: 85, document: { type: 'signing', id: 12 } })).toBe(
+      '/app/companies/85/received/signing-documents/12',
+    );
     expect(acceptedLandingPath({ linked_company_id: 85, document: null })).toBe('/app/companies/85');
   });
 });

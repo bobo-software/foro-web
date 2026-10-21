@@ -1,17 +1,48 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { DocumentSheet } from '@/components/elements/DocumentSheet';
-import ReceivedDocumentsService from '@/services/receivedDocumentsService';
+import SigningDocumentPreview from '@/components/elements/SigningDocumentPreview';
+import ReceivedDocumentsService, {
+  type ReceivedSigningDocumentDetail,
+} from '@/services/receivedDocumentsService';
 import type { BankingDetails } from '@/types/bankingDetails';
 import type { Business } from '@/types/business';
 import type { Invoice, InvoiceItem } from '@/types/invoice';
 import type { Quotation, QuotationLine } from '@/types/quotation';
+import type { SigningDocumentStatus, SigningDocumentView } from '@/types/signingDocument';
 import { generateInvoicePdf } from '@/utils/invoicePdf';
 import { generateQuotationPdf } from '@/utils/quotationPdf';
+import { downloadSigningDocumentPdf } from '@/utils/signingDocumentPdf';
 import { isCreditNoteInvoice } from '@/utils/invoiceLedger';
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString(undefined, { dateStyle: 'long' });
+}
+
+function signingView(detail: ReceivedSigningDocumentDetail): SigningDocumentView {
+  const doc = detail.document;
+  return {
+    id: doc.id,
+    title: doc.title,
+    body_html: doc.bodyHtml,
+    status: doc.status as SigningDocumentStatus,
+    company_name: detail.companyName,
+    recipient_name: doc.recipientName,
+    sender_signed_name: doc.senderSignedName,
+    sender_signature_date: doc.senderSignatureDate,
+    sender_signature_url: detail.senderSignatureUrl,
+    recipient_signed_name: doc.recipientSignedName,
+    recipient_signature_date: doc.recipientSignatureDate,
+    recipient_signature_url: detail.recipientSignatureUrl,
+    business: {
+      name: detail.business?.name ?? '',
+      address: detail.business?.address ?? undefined,
+      phone: detail.business?.phone ?? undefined,
+      vat_number: detail.business?.vatNumber ?? undefined,
+      registration_number: detail.business?.registrationNumber ?? undefined,
+      logo_download_url: detail.logoDownloadUrl,
+    },
+  };
 }
 
 type Loaded =
@@ -22,9 +53,10 @@ type Loaded =
       lineItems: QuotationLine[];
       business: Business | null;
       bankingDetails: BankingDetails | null;
-    };
+    }
+  | { kind: 'signing-documents'; detail: ReceivedSigningDocumentDetail };
 
-/** Read-only view of an invoice/quotation a linked Foro business sent you. */
+/** Read-only view of an invoice/quotation/signed document a linked Foro business sent you. */
 export function ReceivedDocumentPage() {
   const { id = '', kind, docId = '' } = useParams<{ id: string; kind: string; docId: string }>();
   const companyId = Number(id);
@@ -36,9 +68,14 @@ export function ReceivedDocumentPage() {
     setDoc(null);
     setError(null);
     const load: Promise<Loaded> =
-      kind === 'quotations'
-        ? ReceivedDocumentsService.getQuotation(companyId, Number(docId)).then((r) => ({ kind: 'quotations', ...r }))
-        : ReceivedDocumentsService.getInvoice(companyId, Number(docId)).then((r) => ({ kind: 'invoices', ...r }));
+      kind === 'signing-documents'
+        ? ReceivedDocumentsService.getSigningDocument(companyId, Number(docId)).then((detail) => ({
+            kind: 'signing-documents',
+            detail,
+          }))
+        : kind === 'quotations'
+          ? ReceivedDocumentsService.getQuotation(companyId, Number(docId)).then((r) => ({ kind: 'quotations', ...r }))
+          : ReceivedDocumentsService.getInvoice(companyId, Number(docId)).then((r) => ({ kind: 'invoices', ...r }));
     load
       .then((result) => {
         if (!cancelled) setDoc(result);
@@ -54,10 +91,13 @@ export function ReceivedDocumentPage() {
   const downloadPdf = useCallback(async () => {
     if (!doc) return;
     if (doc.kind === 'invoices') await generateInvoicePdf(doc.invoice, doc.lineItems, doc.business);
-    else await generateQuotationPdf(doc.quotation, doc.lineItems, doc.business);
+    else if (doc.kind === 'quotations') await generateQuotationPdf(doc.quotation, doc.lineItems, doc.business);
+    else await downloadSigningDocumentPdf(signingView(doc.detail));
   }, [doc]);
 
-  const backTo = `/app/companies/${companyId}?tab=received-${kind === 'quotations' ? 'quotations' : 'invoices'}`;
+  const backTab =
+    kind === 'signing-documents' ? 'signing-documents' : kind === 'quotations' ? 'quotations' : 'invoices';
+  const backTo = `/app/companies/${companyId}?tab=received-${backTab}`;
 
   if (error) {
     return (
@@ -74,17 +114,23 @@ export function ReceivedDocumentPage() {
   const title =
     doc.kind === 'invoices'
       ? `${isCreditNoteInvoice(doc.invoice) ? 'Credit note' : 'Invoice'} ${doc.invoice.invoice_number}`
-      : `Quotation ${doc.quotation.quotation_number}`;
+      : doc.kind === 'quotations'
+        ? `Quotation ${doc.quotation.quotation_number}`
+        : doc.detail.document.title;
+  const senderName =
+    doc.kind === 'signing-documents'
+      ? doc.detail.business?.name ?? 'a linked business'
+      : doc.business?.name ?? 'a linked business';
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div>
           <Link to={backTo} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
-            ← Back to {doc.business?.name ?? 'company'}
+            ← Back to {senderName}
           </Link>
           <h1 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{title}</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Sent to you by {doc.business?.name ?? 'a linked business'} · read-only</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Sent to you by {senderName} · read-only</p>
         </div>
         <button
           type="button"
@@ -109,7 +155,7 @@ export function ReceivedDocumentPage() {
           currency={doc.invoice.currency}
           notes={doc.invoice.notes}
         />
-      ) : (
+      ) : doc.kind === 'quotations' ? (
         <DocumentSheet
           business={doc.business}
           bankingDetails={doc.bankingDetails}
@@ -127,6 +173,8 @@ export function ReceivedDocumentPage() {
           currency={doc.quotation.currency}
           notes={doc.quotation.notes}
         />
+      ) : (
+        <SigningDocumentPreview view={signingView(doc.detail)} />
       )}
     </div>
   );

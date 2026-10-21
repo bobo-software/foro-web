@@ -89,11 +89,17 @@ export const RECEIVED_DOCUMENTS_PATH = '/app/documents/received';
 /** Where to land after accepting: the emailed document, else the sender's company page. */
 export function acceptedLandingPath(result: Pick<InviteAccepted, 'linked_company_id' | 'document'>): string {
   if (!result.document) return `/app/companies/${result.linked_company_id}`;
-  const kind = result.document.type === 'quotation' ? 'quotations' : 'invoices';
+  const kind =
+    result.document.type === 'signing'
+      ? 'signing-documents'
+      : result.document.type === 'quotation'
+        ? 'quotations'
+        : 'invoices';
   return `/app/companies/${result.linked_company_id}/received/${kind}/${result.document.id}`;
 }
 
 export function documentLabel(document: NonNullable<CompanyInvitePreview['document']>): string {
+  if (document.type === 'signing') return `the signed document "${document.number}"`;
   return `${document.type === 'quotation' ? 'quotation' : 'invoice'} ${document.number}`;
 }
 

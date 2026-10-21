@@ -14,7 +14,14 @@ const KIND_OPTIONS: { value: KindFilter; label: string }[] = [
   { value: 'all', label: 'All documents' },
   { value: 'quotation', label: 'Quotations' },
   { value: 'invoice', label: 'Invoices' },
+  { value: 'signing', label: 'Signing documents' },
 ];
+
+const KIND_PATH: Record<ReceivedDocumentKind, string> = {
+  quotation: 'quotations',
+  invoice: 'invoices',
+  signing: 'signing-documents',
+};
 
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -49,13 +56,13 @@ export function ReceivedDocumentsTab() {
         id: 'kind',
         header: 'Type',
         cellClassName: 'text-slate-600 dark:text-slate-300',
-        render: (row) => capitalize(row.kind),
+        render: (row) => (row.kind === 'signing' ? 'Signed' : capitalize(row.kind)),
       },
       {
         id: 'number',
         header: 'Number',
         cellClassName: 'text-slate-700 dark:text-slate-200',
-        render: (row) => row.number || '—',
+        render: (row) => (row.kind === 'signing' ? row.title ?? '—' : row.number || '—'),
       },
       {
         id: 'issue_date',
@@ -79,7 +86,7 @@ export function ReceivedDocumentsTab() {
         header: 'Total',
         align: 'right',
         cellClassName: 'font-medium text-slate-800 dark:text-slate-100',
-        render: (row) => formatCurrency(Number(row.total), row.currency),
+        render: (row) => (row.kind === 'signing' ? '—' : formatCurrency(Number(row.total), row.currency)),
       },
     ],
     [],
@@ -89,7 +96,7 @@ export function ReceivedDocumentsTab() {
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Quotations and invoices other Foro businesses have sent you. Read-only.
+          Quotations, invoices and signed documents other Foro businesses have sent you. Read-only.
         </p>
         <AppLabeledSelectInput
           label="Type"
@@ -104,11 +111,11 @@ export function ReceivedDocumentsTab() {
         data={documents}
         getRowKey={(row) => `${row.kind}-${row.id}`}
         onRowClick={(row) =>
-          navigate(`/app/companies/${row.companyId}/received/${row.kind === 'quotation' ? 'quotations' : 'invoices'}/${row.id}`)
+          navigate(`/app/companies/${row.companyId}/received/${KIND_PATH[row.kind]}/${row.id}`)
         }
         loading={loading}
         error={error}
-        emptyMessage="Nothing received yet. When a linked business sends you a quotation or invoice, it shows up here."
+        emptyMessage="Nothing received yet. When a linked business sends you a quotation, invoice or document to sign, it shows up here."
       />
     </div>
   );

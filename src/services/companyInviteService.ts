@@ -28,7 +28,7 @@ export interface CompanyInvitePreview {
   document: { type: InviteDocumentType; id: number; number: string } | null;
 }
 
-export type InviteDocumentType = 'quotation' | 'invoice';
+export type InviteDocumentType = 'quotation' | 'invoice' | 'signing';
 
 /** The recipient's own company, as entered on the invite page. */
 export interface InviteCompanyDetails {

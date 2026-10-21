@@ -293,7 +293,7 @@ export function CompanyInvitePage() {
         </li>
         <li className="flex items-start gap-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
           <LuFileText className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
-          Optionally sign in to see their quotations and invoices.
+          Optionally sign in to see their quotations, invoices and signed documents.
         </li>
       </ul>
       <ErrorBanner message={error} />
