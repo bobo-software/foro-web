@@ -62,6 +62,11 @@ const RecordExpensePage = lazy(() => import('@pages/admin/purchasing/RecordExpen
 const ExpensesPage = lazy(() => import('@pages/admin/purchasing/ExpensesPage').then((m) => ({ default: m.ExpensesPage })));
 const ExpenseFormPage = lazy(() => import('@pages/admin/purchasing/ExpenseFormPage').then((m) => ({ default: m.ExpenseFormPage })));
 const PayrollPage = lazy(() => import('@pages/admin/payroll/PayrollPage').then((m) => ({ default: m.PayrollPage })));
+const TaxPage = lazy(() => import('@pages/admin/tax/TaxPage').then((m) => ({ default: m.TaxPage })));
+const TaxOverviewPage = lazy(() => import('@pages/admin/tax/TaxOverviewPage').then((m) => ({ default: m.TaxOverviewPage })));
+const TaxProfilePage = lazy(() => import('@pages/admin/tax/TaxProfilePage').then((m) => ({ default: m.TaxProfilePage })));
+const TaxReturnsPage = lazy(() => import('@pages/admin/tax/TaxReturnsPage').then((m) => ({ default: m.TaxReturnsPage })));
+const TaxReturnDetailPage = lazy(() => import('@pages/admin/tax/TaxReturnDetailPage').then((m) => ({ default: m.TaxReturnDetailPage })));
 const EmployeeListPage = lazy(() => import('@pages/admin/payroll/EmployeeListPage').then((m) => ({ default: m.EmployeeListPage })));
 const EmployeeFormPage = lazy(() => import('@pages/admin/payroll/EmployeeFormPage').then((m) => ({ default: m.EmployeeFormPage })));
 const EmployeeDetailPage = lazy(() => import('@pages/admin/payroll/EmployeeDetailPage').then((m) => ({ default: m.EmployeeDetailPage })));
@@ -291,6 +296,13 @@ function App() {
               <Route path="payroll/year-end/:id" element={<YearEndDetailPage />} />
               <Route path="payroll/emp501/create" element={<Emp501FormPage />} />
               <Route path="payroll/emp501/:id" element={<Emp501DetailPage />} />
+              <Route path="tax" element={<TaxPage />}>
+                <Route index element={<Navigate to="overview" replace />} />
+                <Route path="overview" element={<TaxOverviewPage />} />
+                <Route path="returns" element={<TaxReturnsPage />} />
+                <Route path="returns/:id" element={<TaxReturnDetailPage />} />
+                <Route path="profile" element={<TaxProfilePage />} />
+              </Route>
               <Route path="quotations" element={<Outlet />}>
                 <Route index element={<QuotationListPage />} />
                 <Route path="create" element={<QuotationFormPage />} />

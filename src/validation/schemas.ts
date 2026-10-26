@@ -202,6 +202,39 @@ export const payrollEmployerSettingsSchema = z.object({
 
 export type PayrollEmployerSettingsInput = z.infer<typeof payrollEmployerSettingsSchema>;
 
+export const businessTaxProfileSchema = z.object({
+  entity_type: z.enum(['company', 'sbc', 'sole_prop'], { message: 'Choose how SARS taxes this business' }),
+  tax_reference: z
+    .string()
+    .trim()
+    .refine((value) => value === '' || /^\d{10}$/.test(value), {
+      message: 'SARS tax reference must be 10 digits',
+    }),
+  financial_year_end_month: z.number().int().min(1).max(12),
+  vat_registered: z.boolean(),
+  owner_date_of_birth: z.string().optional(),
+  basic_amount: z
+    .string()
+    .trim()
+    .refine((value) => value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0), {
+      message: 'Basic amount must be a positive number',
+    }),
+  notes: z.string().max(2000).optional(),
+});
+
+export type BusinessTaxProfileInput = z.infer<typeof businessTaxProfileSchema>;
+
+export const taxAdjustmentSchema = z.object({
+  label: z.string().trim().min(1, 'Describe the adjustment').max(150),
+  direction: z.enum(['add', 'deduct']),
+  amount: z
+    .string()
+    .trim()
+    .refine((value) => Number.isFinite(Number(value)) && Number(value) > 0, {
+      message: 'Amount must be more than zero',
+    }),
+});
+
 export const payrollComponentTypeSchema = z.object({
   code: z
     .string()

@@ -9,6 +9,7 @@ import { useCompanyStore } from '@/stores/data/CompanyStore';
 import { useDashboardStore } from '@/stores/data/DashboardStore';
 import { formatCurrency } from '@/utils/currency';
 import type { Company } from '@/types/company';
+import { DashboardTaxTile } from './tax/DashboardTaxTile';
 import {
   LuUsers,
   LuFileText,
@@ -426,6 +427,8 @@ export function DashboardPage() {
           />
         </div>
       </div>
+
+      {!isSuperAdmin && !businessLoading && !!currentBusiness && <DashboardTaxTile />}
 
       <RecentInvoicesTable
         invoices={recentInvoices}
